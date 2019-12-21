@@ -1,7 +1,8 @@
 package org.urajio.freshpastry.rice;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.urajio.freshpastry.rice.environment.Environment;
-import rice.environment.logging.Logger;
 import org.urajio.freshpastry.rice.selector.SelectorManager;
 
 /**
@@ -32,7 +33,7 @@ public interface Continuation<R, E extends Exception> {
    * Called when an exception occurred as a result of the
    * previous command.
    *
-   * @param result The exception which was caused.
+   * @param exception The exception which was caused.
    */
   void receiveException(E exception);
 
@@ -112,14 +113,13 @@ public interface Continuation<R, E extends Exception> {
    * used in production environment.
    */
   class ListenerContinuation<R, E extends Exception> implements Continuation<R, E> {
-
+    private final static Logger logger = LoggerFactory.getLogger(ListenerContinuation.class);
     /**
      * The name of this continuation
      */
     protected String name;
     
-    protected Logger logger;
-    
+
     /**
      * Constructor which takes in a name
      *
@@ -128,7 +128,6 @@ public interface Continuation<R, E extends Exception> {
      */
     public ListenerContinuation(String name, Environment env) {
       this.name = name;
-      this.logger = env.getLogManager().getLogger(getClass(), null);
     }
     
     /**
@@ -147,8 +146,7 @@ public interface Continuation<R, E extends Exception> {
      * @param result The exception which was caused.
      */
     public void receiveException(Exception result) {
-      if (logger.level <= Logger.WARNING) logger.logException(
-          "ERROR - Received exception " + result + " during task " + name, result);
+      logger.warn("ERROR - Received exception during task " + name, result);
     }
   }
   

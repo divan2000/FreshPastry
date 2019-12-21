@@ -1,7 +1,8 @@
 package org.urajio.freshpastry.rice.environment.processing.simple;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.urajio.freshpastry.rice.*;
-import rice.environment.logging.*;
 import org.urajio.freshpastry.rice.environment.time.TimeSource;
 import org.urajio.freshpastry.rice.p2p.commonapi.Cancellable;
 import org.urajio.freshpastry.rice.selector.SelectorManager;
@@ -14,6 +15,8 @@ import org.urajio.freshpastry.rice.selector.SelectorManager;
 @SuppressWarnings("unchecked")
 public class ProcessingRequest implements Runnable,
     Comparable<ProcessingRequest>, Cancellable {
+  private final static Logger logger = LoggerFactory.getLogger(ProcessingRequest.class);
+
   Continuation c;
   Executable r;
   private boolean cancelled = false;
@@ -21,16 +24,14 @@ public class ProcessingRequest implements Runnable,
   
   TimeSource timeSource;
   SelectorManager selectorManager;
-  Logger logger;
   int priority = 0;
   long seq;
 
   public ProcessingRequest(Executable r, Continuation c, int priority, long seq,
-      LogManager logging, TimeSource timeSource, SelectorManager selectorManager) {
+      TimeSource timeSource, SelectorManager selectorManager) {
     this.r = r;
     this.c = c;
 
-    logger = logging.getLogger(getClass(), null);
     this.timeSource = timeSource;
     this.selectorManager = selectorManager;
     this.priority = priority;
@@ -61,14 +62,11 @@ public class ProcessingRequest implements Runnable,
   public void run() {
     if (cancelled) return;
     running = true;
-    if (logger.level <= Logger.FINER)
-      logger.log("COUNT: Starting execution of " + this);
+    logger.debug("COUNT: Starting execution of " + this);
     try {
       long start = timeSource.currentTimeMillis();
       final Object result = r.execute();
-      if (logger.level <= Logger.FINEST)
-        logger.log("QT: " + (timeSource.currentTimeMillis() - start) + " "
-            + r.toString());
+      logger.debug("QT: " + (timeSource.currentTimeMillis() - start) + " " + r.toString());
 
       selectorManager.invoke(new Runnable() {
         public void run() {
@@ -90,8 +88,7 @@ public class ProcessingRequest implements Runnable,
         }
       });
     }
-    if (logger.level <= Logger.FINER)
-      logger.log("COUNT: Done execution of " + this);
+    logger.debug("COUNT: Done execution of " + this);
   }
 
   public boolean cancel() {

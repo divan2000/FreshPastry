@@ -3,7 +3,6 @@ package org.urajio.freshpastry.rice.environment.processing.simple;
 import org.urajio.freshpastry.rice.Continuation;
 import org.urajio.freshpastry.rice.Executable;
 import org.urajio.freshpastry.rice.environment.Environment;
-import rice.environment.logging.LogManager;
 import org.urajio.freshpastry.rice.environment.processing.Processor;
 import org.urajio.freshpastry.rice.environment.processing.WorkRequest;
 import org.urajio.freshpastry.rice.environment.time.TimeSource;
@@ -49,17 +48,17 @@ public class SimpleProcessor implements Processor {
    *          The command to return the result to once it's done
    */
   public <R, E extends Exception> Cancellable process(Executable<R,E> task, Continuation<R, E> command,
-      SelectorManager selector, TimeSource ts, LogManager log) {
-    return process(task, command, 0, selector, ts, log);
+      SelectorManager selector, TimeSource ts) {
+    return process(task, command, 0, selector, ts);
   }
 
   public <R, E extends Exception> Cancellable process(Executable<R,E> task, Continuation<R, E> command, int priority,
-      SelectorManager selector, TimeSource ts, LogManager log) {
+      SelectorManager selector, TimeSource ts) {
     long nextSeq;
     synchronized(SimpleProcessor.this) {
       nextSeq = seq++;
     }
-    ProcessingRequest ret = new ProcessingRequest(task, command, priority, nextSeq, log, ts, selector);
+    ProcessingRequest ret = new ProcessingRequest(task, command, priority, nextSeq, ts, selector);
     QUEUE.offer(ret);
     return ret;
   }
@@ -108,7 +107,7 @@ public class SimpleProcessor implements Processor {
         exception.printStackTrace();
       }
     
-    }, env.getSelectorManager(), env.getTimeSource(), env.getLogManager());
+    }, env.getSelectorManager(), env.getTimeSource());
     
     for (int seq = 0; seq < 10; seq++) {
       final int mySeq = seq;
@@ -127,7 +126,7 @@ public class SimpleProcessor implements Processor {
           exception.printStackTrace();
         }
       
-      }, env.getSelectorManager(), env.getTimeSource(), env.getLogManager());      
+      }, env.getSelectorManager(), env.getTimeSource());
       System.out.println("Done scheduling "+mySeq);    
     }
   }

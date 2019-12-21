@@ -1,46 +1,7 @@
-/*******************************************************************************
-
-"FreePastry" Peer-to-Peer Application Development Substrate
-
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
-for Software Systems.  All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are
-met:
-
-- Redistributions of source code must retain the above copyright
-notice, this list of conditions and the following disclaimer.
-
-- Redistributions in binary form must reproduce the above copyright
-notice, this list of conditions and the following disclaimer in the
-documentation and/or other materials provided with the distribution.
-
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
-permission.
-
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
-liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
-advised of the possibility of such damage.
-
-*******************************************************************************/ 
-/*
- * Created on Nov 8, 2005
- */
 package org.urajio.freshpastry.rice.environment.time.simulated;
 
-import rice.environment.logging.LogManager;
-import rice.environment.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.urajio.freshpastry.rice.environment.params.Parameters;
 import org.urajio.freshpastry.rice.environment.time.TimeSource;
 import org.urajio.freshpastry.rice.selector.SelectorManager;
@@ -50,9 +11,10 @@ import java.util.ArrayList;
 import java.util.HashSet;
 
 public class DirectTimeSource implements TimeSource {
+  private final static Logger logger = LoggerFactory.getLogger(DirectTimeSource.class);
+
 
   protected long time = 0;
-  protected Logger logger = null;
   protected String instance;
   protected SelectorManager selectorManager;
   
@@ -78,8 +40,8 @@ public class DirectTimeSource implements TimeSource {
     this(p.getLong("direct_simulator_start_time")); 
   }
 
-  public void setLogManager(LogManager manager) {
-    logger = manager.getLogger(DirectTimeSource.class, instance);
+  // TODO: dsdiv remove this method
+  public void setLogManager() {
   }
   
   public void setSelectorManager(SelectorManager sm) {
@@ -97,11 +59,10 @@ public class DirectTimeSource implements TimeSource {
    */
   public void setTime(long newTime) {
     if (newTime < time) {
-      if (logger.level <= Logger.WARNING) logger.log("Attempted to set time from "+time+" to "+newTime+", ignoring.");
+      logger.warn("Attempted to set time from "+time+" to "+newTime+", ignoring.");
       return;
-//      throw new RuntimeException("Attempted to set time from "+time+" to "+newTime+".");
     }
-    if ((newTime > time) && (logger.level <= Logger.FINER)) logger.log("DirectTimeSource.setTime("+time+"=>"+newTime+")");
+    logger.debug("DirectTimeSource.setTime("+time+"=>"+newTime+")");
     time = newTime;
   }
 
@@ -136,7 +97,7 @@ public class DirectTimeSource implements TimeSource {
       // we only lock on the selector
       BlockingTimerTask btt = new BlockingTimerTask();
       pendingTimers.add(btt);
-      if (logger.level <= Logger.FINE) logger.log("DirectTimeSource.sleep("+delay+")");
+      logger.debug("DirectTimeSource.sleep("+delay+")");
       
       selectorManager.getTimer().schedule(btt,delay);
       

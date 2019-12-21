@@ -1,7 +1,6 @@
 package org.urajio.freshpastry.rice.environment.processing.sim;
 
 import org.urajio.freshpastry.rice.*;
-import rice.environment.logging.LogManager;
 import org.urajio.freshpastry.rice.environment.processing.*;
 import org.urajio.freshpastry.rice.environment.processing.simple.ProcessingRequest;
 import org.urajio.freshpastry.rice.environment.time.TimeSource;
@@ -16,13 +15,13 @@ public class SimProcessor implements Processor {
   }
 
   public <R, E extends Exception> Cancellable process(Executable<R,E> task, Continuation<R, E> command,
-      SelectorManager selector, TimeSource ts, LogManager log) {
-    return process(task, command, 0, selector, ts, log);
+      SelectorManager selector, TimeSource ts) {
+    return process(task, command, 0, selector, ts);
   }
 
   public <R, E extends Exception> Cancellable process(Executable<R,E> task, Continuation<R, E> command, int priority,
-      SelectorManager selector, TimeSource ts, LogManager log) {
-    ProcessingRequest ret = new ProcessingRequest(task, command, 0, 0, log, ts, selector);
+      SelectorManager selector, TimeSource ts) {
+    ProcessingRequest ret = new ProcessingRequest(task, command, 0, 0, ts, selector);
     selector.invoke(ret);
     return ret;
   }

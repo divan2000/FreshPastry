@@ -1,5 +1,7 @@
 package org.urajio.freshpastry.rice.pastry;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.urajio.freshpastry.org.mpisws.p2p.transport.*;
 import org.urajio.freshpastry.org.mpisws.p2p.transport.liveness.LivenessListener;
 import org.urajio.freshpastry.org.mpisws.p2p.transport.liveness.LivenessProvider;
@@ -11,7 +13,6 @@ import org.urajio.freshpastry.rice.Continuation;
 import org.urajio.freshpastry.rice.Destructable;
 import org.urajio.freshpastry.rice.Executable;
 import org.urajio.freshpastry.rice.environment.Environment;
-import rice.environment.logging.Logger;
 import org.urajio.freshpastry.rice.p2p.commonapi.appsocket.AppSocketReceiver;
 import org.urajio.freshpastry.rice.p2p.commonapi.exception.AppNotRegisteredException;
 import org.urajio.freshpastry.rice.p2p.commonapi.exception.AppSocketException;
@@ -56,6 +57,8 @@ public class PastryNode extends Observable implements
     ProximityListener<NodeHandle>,
     TransportLayerCallback<NodeHandle, RawMessage>, 
     LivenessListener<NodeHandle> {
+  private final static Logger logger = LoggerFactory.getLogger(PastryNode.class);
+
 
   /**
    * Used by AppSockets
@@ -81,8 +84,6 @@ public class PastryNode extends Observable implements
 
   protected Vector apps;
 
-  protected Logger logger;
-  
   ReadyStrategy readyStrategy;
   
   protected boolean joinFailed = false;
@@ -126,7 +127,6 @@ public class PastryNode extends Observable implements
     readyStrategy = getDefaultReadyStrategy();
     
     apps = new Vector();
-    logger = e.getLogManager().getLogger(getClass(), null);
     e.addDestructable(this);
   }
 
@@ -197,8 +197,6 @@ public class PastryNode extends Observable implements
    * 
    * @param lh
    *          Node handle corresponding to this node.
-   * @param sm
-   *          Security manager.
    * @param md
    *          Message dispatcher.
    * @param ls
@@ -274,14 +272,6 @@ public class PastryNode extends Observable implements
 
   }
 
-  /**
-   * Overridden by derived classes to initiate the join process
-   * 
-   * @param bootstrap
-   *          Node handle to bootstrap with.
-   */
-//  public abstract void initiateJoin(Collection<NodeHandle> bootstrap);
-
   public void setReady() {
     setReady(true);
   }
@@ -291,7 +281,7 @@ public class PastryNode extends Observable implements
   }
 
   public NodeHandle coalesce(NodeHandle newHandle) {
-    if (logger.level <= Logger.FINER) logger.log("coalesce("+newHandle+")");
+    logger.debug("coalesce("+newHandle+")");
     return handleFactory.coalesce(newHandle);
   }
   
@@ -307,7 +297,7 @@ public class PastryNode extends Observable implements
     // message denoting the termination of join protocol is duplicated.
     boolean ready = readyStrategy.isReady();
     //      if (r == false)
-    if (logger.level <= Logger.INFO) logger.log("PastryNode.notifyReadyObservers("+ready+")");
+    logger.info("PastryNode.notifyReadyObservers("+ready+")");
 
     if (ready) {
       nodeIsReady(); // deprecate this
@@ -425,7 +415,7 @@ public class PastryNode extends Observable implements
    */
   public synchronized void receiveMessage(Message msg) {
     if (isDestroyed) return;
-    if (logger.level <= Logger.FINE) logger.log("receiveMessage("+msg+")");
+    logger.debug("receiveMessage("+msg+")");
     myMessageDispatch.dispatchMessage(msg);
   }
   
@@ -435,9 +425,7 @@ public class PastryNode extends Observable implements
   
   /**
    * Registers a message receiver with this Pastry node.
-   * 
-   * @param cred
-   *          the credentials.
+   *
    * @param address
    *          the address that the receiver will be at.
    * @param receiver
@@ -445,7 +433,7 @@ public class PastryNode extends Observable implements
    */
   public void registerReceiver(int address,
       PastryAppl receiver) {
-    if (logger.level <= Logger.FINE) logger.log("registerReceiver("+address+","+receiver+"):"+receiver.getDeserializer());
+    logger.debug("registerReceiver("+address+","+receiver+"):"+receiver.getDeserializer());
     myMessageDispatch.registerReceiver(address, receiver);
   }
 
@@ -548,8 +536,7 @@ public class PastryNode extends Observable implements
       myEnvironment.getProcessor().process(task, 
           command, 
           myEnvironment.getSelectorManager(), 
-          myEnvironment.getTimeSource(), 
-          myEnvironment.getLogManager());
+          myEnvironment.getTimeSource());
       
 //      command.receiveResult(task.execute());
     } catch (final Exception e) {
@@ -566,10 +553,10 @@ public class PastryNode extends Observable implements
    */
   public void destroy() {
     if (isDestroyed) return;
-    if (logger.level <= Logger.INFO) logger.log("Destroying "+this);
+    logger.info("Destroying "+this);
     isDestroyed = true;
     for (Destructable d : destructables) {
-      if (logger.level <= Logger.INFO - 5) logger.log("Destroying " + d);
+      logger.info("Destroying " + d);
       d.destroy();
     }
     getEnvironment().removeDestructable(this);
@@ -588,8 +575,8 @@ public class PastryNode extends Observable implements
   /**
    * Called by PastryAppl to ask the transport layer to open a Socket to its counterpart on another node.
    * 
-   * @param handle
-   * @param receiver
+   * @param i handle
+   * @param deliverSocketToMe receiver
    * @param appl
    */
   @SuppressWarnings("unchecked")
@@ -598,7 +585,7 @@ public class PastryNode extends Observable implements
     
 //    final SocketNodeHandle i = (SocketNodeHandle)i2;
     
-    final SocketRequestHandleImpl<NodeHandle> handle = new SocketRequestHandleImpl<>(i, null, logger);
+    final SocketRequestHandleImpl<NodeHandle> handle = new SocketRequestHandleImpl<>(i, null);
 
     Runnable r = new Runnable() {
       public void run() {
@@ -615,8 +602,7 @@ public class PastryNode extends Observable implements
                 P2PSocket<NodeHandle> result) {
               
               if (c != handle.getSubCancellable()) throw new RuntimeException("c != handle.getSubCancellable() (indicates a bug in the code) c:"+c+" sub:"+handle.getSubCancellable());
-              
-              if (logger.level <= Logger.FINER) logger.log("openSocket("+i+"):receiveResult("+result+")");
+              logger.debug("openSocket("+i+"):receiveResult("+result+")");
               result.register(false, true, new P2PSocketReceiver<NodeHandle>() {        
                 public void receiveSelectResult(P2PSocket<NodeHandle> socket,
                     boolean canRead, boolean canWrite) throws IOException {
@@ -705,7 +691,7 @@ public class PastryNode extends Observable implements
   
   protected JoinFailedException joinFailedReason;
   public void joinFailed(JoinFailedException cje) {
-    if (logger.level <= Logger.WARNING) logger.log("joinFailed("+cje+")");
+    logger.warn("joinFailed("+cje+")");
     joinFailedReason = cje;
     synchronized(this) {
       joinFailed = true;
@@ -785,7 +771,7 @@ public class PastryNode extends Observable implements
           boolean canRead, boolean canWrite) throws IOException {
         // read the appId
         if (socket.read(appIdBuffer) == -1) {
-          if (logger.level <= Logger.WARNING) logger.log("AppId Socket from "+socket+" closed unexpectedly.");
+          logger.warn("AppId Socket from "+socket+" closed unexpectedly.");
           return;
         }
         
@@ -810,7 +796,7 @@ public class PastryNode extends Observable implements
               boolean success = false;
               
               if (acceptorAppl == null) {
-                if (logger.level <= Logger.WARNING) logger.log("Sending error to connecter "+socket+" "+new AppNotRegisteredException(appId));
+                logger.warn("Sending error to connecter "+socket+" "+new AppNotRegisteredException(appId));
                 toWrite.put(CONNECTION_NO_APP);
                 toWrite.clear();
 //                logger.log("incomingSocket("+socket+") rSR(): writing1:"+toWrite);
@@ -824,7 +810,7 @@ public class PastryNode extends Observable implements
                     toWrite.clear();
                     success = true;
                   } else {
-                    if (logger.level <= Logger.WARNING) logger.log("Sending error to connecter "+socket+" "+new NoReceiverAvailableException());
+                    logger.warn("Sending error to connecter "+socket+" "+new NoReceiverAvailableException());
                     toWrite.put(CONNECTION_NO_ACCEPTOR);                    
                     toWrite.clear();
                   }
@@ -833,7 +819,7 @@ public class PastryNode extends Observable implements
                   socket.write(toWrite);
                   if (toWrite.hasRemaining()) {
                     // this sucks, because the snychronization with the app-receiver becomes all wrong, this shouldn't normally happen
-                    if (logger.level <= Logger.WARNING) logger.log("couldn't write 1 bite!!! "+toWrite);
+                    logger.warn("couldn't write 1 bite!!! "+toWrite);
                     socket.close();
                     return;
                   }
@@ -847,9 +833,8 @@ public class PastryNode extends Observable implements
             } // rSR()
           
             public void receiveException(P2PSocket<NodeHandle> socket, Exception ioe) {
-              if (logger.level <= Logger.WARNING) logger.logException("incomingSocket("+socket+")", ioe);
-              return;
-            }          
+              logger.warn("incomingSocket("+socket+")", ioe);
+            }
           });
         }
       }
@@ -857,7 +842,7 @@ public class PastryNode extends Observable implements
       public void receiveException(
           P2PSocket<NodeHandle> socket,
           Exception ioe) {
-        if (logger.level <= Logger.WARNING) logger.logException("incomingSocket("+socket+")",ioe);
+        logger.warn("incomingSocket("+socket+")",ioe);
       }
     
     });
@@ -941,9 +926,6 @@ public class PastryNode extends Observable implements
   /**
    * Deliver message to the NodeHandle.
    * 
-   * @param nh
-   * @param m
-   * @return
    */
   public PMessageReceipt send(final NodeHandle handle, 
       final Message msg, 
@@ -1057,26 +1039,24 @@ public class PastryNode extends Observable implements
    * 
    * @param bootstrap The node which this node should boot off of.
    */
-  public void doneNode(Collection<NodeHandle> bootstrap) { 
-    if (logger.level <= Logger.INFO) logger.log("doneNode:"+bootstrap);
+  public void doneNode(Collection<NodeHandle> bootstrap) {
+    logger.info("doneNode:"+bootstrap);
 //    doneNode(bootstrap.toArray(new NodeHandle[1]));
 //  }
 //
 //  public void doneNode(NodeHandle[] bootstrap) {
-    if (logger.level <= Logger.INFO) logger.log("doneNode:"+bootstrap);
+    logger.info("doneNode:"+bootstrap);
     if (routeSetMaintFreq > 0) {
       // schedule the routeset maintenance event
       routeSetRoutineMaintenance = scheduleMsgAtFixedRate(new InitiateRouteSetMaintenance(),
         routeSetMaintFreq * 1000, routeSetMaintFreq * 1000);
-      if (logger.level <= Logger.CONFIG) logger.log(
-          "Scheduling routeSetMaint for "+routeSetMaintFreq * 1000+","+routeSetMaintFreq * 1000);
+      logger.info("Scheduling routeSetMaint for "+routeSetMaintFreq * 1000+","+routeSetMaintFreq * 1000);
     }
     if (leafSetMaintFreq > 0) {
       // schedule the leafset maintenance event
       leafSetRoutineMaintenance = scheduleMsgAtFixedRate(new InitiateLeafSetMaintenance(),
         leafSetMaintFreq * 1000, leafSetMaintFreq * 1000);
-      if (logger.level <= Logger.CONFIG) logger.log(
-          "Scheduling leafSetMaint for "+leafSetMaintFreq * 1000+","+leafSetMaintFreq * 1000);
+      logger.info("Scheduling leafSetMaint for "+leafSetMaintFreq * 1000+","+leafSetMaintFreq * 1000);
     }
     
     joiner.initiateJoin(bootstrap);
@@ -1109,7 +1089,7 @@ public class PastryNode extends Observable implements
   }
   
   protected void notifyLivenessListeners(NodeHandle i, int val, Map<String, Object> options) {
-    if (logger.level <= Logger.FINE) logger.log("notifyLivenessListeners("+i+","+val+")"); 
+    logger.debug("notifyLivenessListeners("+i+","+val+")");
     ArrayList<LivenessListener<NodeHandle>> temp;
     synchronized(livenessListeners) {
       temp = new ArrayList<>(livenessListeners);

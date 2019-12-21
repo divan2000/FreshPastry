@@ -3,32 +3,34 @@ package org.urajio.freshpastry.rice.environment.random.simple;
 import java.net.InetAddress;
 import java.util.Random;
 
-import rice.environment.logging.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.urajio.freshpastry.rice.environment.random.RandomSource;
 
 /**
  * @author Jeff Hoye
  */
 public class SimpleRandomSource implements RandomSource {
+  private final static Logger logger = LoggerFactory.getLogger(SimpleRandomSource.class);
+
   Random rnd;
   
-  Logger logger;
 
   String instance;
   
-  public SimpleRandomSource(long seed, LogManager manager, String instance) {
-    init(seed, manager, instance); 
+  public SimpleRandomSource(long seed, String instance) {
+    init(seed, instance);
   }
     
-  public SimpleRandomSource(long seed, LogManager manager) {
-    this(seed, manager, null); 
+  public SimpleRandomSource(long seed) {
+    this(seed, null);
   }
     
-  public SimpleRandomSource(LogManager manager) {
-    this(manager, null);
+  public SimpleRandomSource() {
+    this(null);
   }
   
-  public SimpleRandomSource(LogManager manager, String instance) {
+  public SimpleRandomSource(String instance) {
       // NOTE: Since we are often starting up a bunch of nodes on planetlab
       // at the same time, we need this randomsource to be seeded by more
       // than just the clock, we will include the IP address
@@ -48,73 +50,62 @@ public class SimpleRandomSource implements RandomSource {
       } catch (Exception e) {
         // if there is no NIC, screw it, this is really unlikely anyway  
       }
-      init(time, manager, instance);
+      init(time, instance);
   }
   
-  public void setLogManager(LogManager manager) {
-    logger = manager.getLogger(SimpleRandomSource.class, instance);     
+  public void setLogManager() {
+    // TODO: dsdiv remove this method
   }
   
-  private void init(long seed, LogManager manager, String instance) {
-    if (manager != null)
-      logger = manager.getLogger(SimpleRandomSource.class, instance);
-    if (logger != null) 
-      if (logger.level <= Logger.INFO) logger.log("RNG seed = "+seed);
-    rnd = new Random(seed);    
+  private void init(long seed, String instance) {
+    logger.info("RNG seed = "+seed);
+    rnd = new Random(seed);
   }
   
   public boolean nextBoolean() {
     boolean ret = rnd.nextBoolean();
-    if (logger != null) 
-      if (logger.level <= Logger.FINER) logger.log("nextBoolean = "+ret);
+    logger.debug("nextBoolean = "+ret);
     return ret;
   }
   
   public void nextBytes(byte[] bytes) {
     rnd.nextBytes(bytes);
-    if (logger != null) 
-      if (logger.level <= Logger.FINER) logger.log("nextBytes["+bytes.length+"] = "+bytes);
+    logger.debug("nextBytes["+bytes.length+"] = "+bytes);
   }
   
   public double nextDouble() {
     double ret = rnd.nextDouble();
-    if (logger != null) 
-      if (logger.level <= Logger.FINER) logger.log("nextDouble = "+ret);
+    logger.debug("nextDouble = "+ret);
     return ret;
   }
   
   public float nextFloat() {
     float ret = rnd.nextFloat();
-    if (logger != null) 
-      if (logger.level <= Logger.FINER) logger.log("nextFloat = "+ret);
+    logger.debug("nextFloat = "+ret);
     return ret;
   }
   
   public double nextGaussian() {
     double ret = rnd.nextGaussian();
-    if (logger != null) 
-      if (logger.level <= Logger.FINER) logger.log("nextGaussian = "+ret);
+    logger.debug("nextGaussian = "+ret);
     return ret;
   }
   
   public int nextInt() {
     int ret = rnd.nextInt();
-    if (logger != null) 
-      if (logger.level <= Logger.FINER) logger.log("nextInt = "+ret);
+    logger.debug("nextInt = "+ret);
     return ret;
   }
   
   public int nextInt(int max) {
     int ret = rnd.nextInt(max);
-    if (logger != null) 
-      if (logger.level <= Logger.FINER) logger.log("nextInt2 = "+ret);
+    logger.debug("nextInt2 = "+ret);
     return ret;
   }
   
   public long nextLong() {
     long ret = rnd.nextLong();
-    if (logger != null) 
-      if (logger.level <= Logger.FINER) logger.log("nextLong = "+ret);
+    logger.debug("nextLong = "+ret);
     return ret;
   }
 }

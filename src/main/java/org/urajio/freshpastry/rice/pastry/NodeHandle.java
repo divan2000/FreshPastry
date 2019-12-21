@@ -1,6 +1,7 @@
 package org.urajio.freshpastry.rice.pastry;
 
-import rice.environment.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.urajio.freshpastry.rice.p2p.commonapi.rawserialization.OutputBuffer;
 import org.urajio.freshpastry.rice.p2p.commonapi.rawserialization.RawSerializable;
 import org.urajio.freshpastry.rice.pastry.messaging.Message;
@@ -21,6 +22,7 @@ import java.util.Observer;
  */
 public abstract class NodeHandle extends org.urajio.freshpastry.rice.p2p.commonapi.NodeHandle implements RawSerializable
 {
+  private final static transient Logger logger = LoggerFactory.getLogger(NodeHandle.class);
 
   public static final int LIVENESS_ALIVE = 1;
   public static final int LIVENESS_SUSPECTED = 2;
@@ -28,8 +30,7 @@ public abstract class NodeHandle extends org.urajio.freshpastry.rice.p2p.commona
     
   // the local pastry node
   protected transient PastryNode localnode;
-  protected transient Logger logger;
-  
+
   static final long serialVersionUID = 987479397660721015L;
   /**
    * Gets the nodeId of this Pastry node.
@@ -205,7 +206,7 @@ public abstract class NodeHandle extends org.urajio.freshpastry.rice.p2p.commona
    * @param priority higher priority observers will be called first
    */
   public void addObserver(Observer o, int priority) {
-    if (logger.level <= Logger.FINER) logger.log(this+".addObserver("+o+")");
+    logger.debug(this+".addObserver("+o+")");
     synchronized (obs) {
       // this pass makes sure it's not already an observer, and also finds 
       // the right spot for it
@@ -215,7 +216,8 @@ public abstract class NodeHandle extends org.urajio.freshpastry.rice.p2p.commona
           if (op.pri != priority) {
             // change the priority, resort, return
             // Should we warn?  Hopefully this won't happen very often...
-            if (logger.level <= Logger.WARNING) logger.log(this+".addObserver("+o+","+priority+") changed priority, was:"+op);      
+            logger.debug(this+".addObserver("+o+","+priority+") changed priority, was:"+op);
+
             op.pri = priority;
             Collections.sort(obs);
             return;
@@ -236,18 +238,18 @@ public abstract class NodeHandle extends org.urajio.freshpastry.rice.p2p.commona
   }
   
   public void deleteObserver(Observer o) {
-    if (logger.level <= Logger.FINER) logger.log(this+".deleteObserver("+o+")");
+    logger.debug(this+".deleteObserver("+o+")");
 //    super.deleteObserver(o); 
     synchronized (obs) {
       for (int i = 0; i < obs.size(); i++) {
         ObsPri op = obs.get(i);
         if (op.obs.equals(o)) {
-          if (logger.level <= Logger.FINEST) logger.log(this+".deleteObserver("+o+"):success");
+          logger.debug(this+".deleteObserver("+o+"):success");
           obs.remove(i);
           return;
         }
       }
-      if (logger.level <= Logger.INFO) logger.log(this+".deleteObserver("+o+"):failure "+o+" was not an observer.");      
+      logger.debug(this+".deleteObserver("+o+"):failure "+o+" was not an observer.");
     }
   }
   
@@ -259,8 +261,7 @@ public abstract class NodeHandle extends org.urajio.freshpastry.rice.p2p.commona
 //      logger.log(this+"notifyObservers("+arg+")list2:"+l);
     }
     for(ObsPri op : l) {
-//      logger.log(this+".notifyObservers("+arg+"):notifying "+op);            
-      if (logger.level <= Logger.FINEST) logger.log(this+".notifyObservers("+arg+"):notifying "+op);            
+      logger.debug(this+".notifyObservers("+arg+"):notifying "+op);
       op.obs.update(this, arg); 
     }    
   }
@@ -281,35 +282,9 @@ public abstract class NodeHandle extends org.urajio.freshpastry.rice.p2p.commona
    * @param update The update
    */
   public void update(Object update) {
-    if (logger != null) {
-//      logger.log(this+".update("+update+")"+countObservers());
-      if (logger.level <= Logger.FINE) {
-//        String s = "";
-//        if (obs != null)
-//          synchronized(obs) {
-//            Iterator i = obs.iterator(); 
-//            while(i.hasNext())
-//              s+=","+i.next();
-//          }
-        logger.log(this+".update("+update+")"+countObservers());
-      }
-    }
+    logger.debug(this+".update("+update+")"+countObservers());
 //    setChanged();
     notifyObservers(update);
-    if (logger != null) {
-      if (logger.level <= Logger.FINEST) {
-//        String s = "";
-//        if (obs != null)
-//          synchronized(obs) {
-//            Iterator i = obs.iterator(); 
-//            while(i.hasNext())
-//              s+=","+i.next();
-//          }
-        logger.log(this+".update("+update+")"+countObservers()+" done");
-      }
-    }
-  }  
+    logger.debug(this+".update("+update+")"+countObservers()+" done");
+  }
 }
-
-
-

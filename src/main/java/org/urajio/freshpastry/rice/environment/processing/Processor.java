@@ -3,7 +3,6 @@ package org.urajio.freshpastry.rice.environment.processing;
 import org.urajio.freshpastry.rice.Continuation;
 import org.urajio.freshpastry.rice.Destructable;
 import org.urajio.freshpastry.rice.Executable;
-import rice.environment.logging.LogManager;
 import org.urajio.freshpastry.rice.environment.time.TimeSource;
 import org.urajio.freshpastry.rice.p2p.commonapi.Cancellable;
 import org.urajio.freshpastry.rice.selector.SelectorManager;
@@ -25,7 +24,7 @@ public interface Processor extends Destructable {
    * @param task The task to run on the processing thread
    * @param command The command to return the result to once it's done
    */
-  <R, E extends Exception> Cancellable process(Executable<R, E> task, Continuation<R, E> command, SelectorManager selector, TimeSource ts, LogManager log);
+  <R, E extends Exception> Cancellable process(Executable<R, E> task, Continuation<R, E> command, SelectorManager selector, TimeSource ts);
     
   /**
    * Schedules a job for processing on the dedicated processing thread.  CPU intensive jobs, such
@@ -37,7 +36,7 @@ public interface Processor extends Destructable {
    * @param task The task to run on the processing thread
    * @param command The command to return the result to once it's done
    */
-  <R, E extends Exception> Cancellable process(Executable<R, E> task, Continuation<R, E> command, int priority, SelectorManager selector, TimeSource ts, LogManager log);
+  <R, E extends Exception> Cancellable process(Executable<R, E> task, Continuation<R, E> command, int priority, SelectorManager selector, TimeSource ts);
 
   /**
    * Schedules a different type of task.  This thread is for doing Disk IO that is required to be blocking.
