@@ -14,6 +14,7 @@ public interface AppSocket {
      *
      * @deprecated use read(ByteBuffer)
      */
+    @Deprecated
     long read(ByteBuffer[] dsts, int offset, int length) throws IOException;
 
     /**
@@ -22,6 +23,7 @@ public interface AppSocket {
      * @throws IOException
      * @deprecated use write(ByteBuffer)
      */
+    @Deprecated
     long write(ByteBuffer[] srcs, int offset, int length) throws IOException;
 
     /**

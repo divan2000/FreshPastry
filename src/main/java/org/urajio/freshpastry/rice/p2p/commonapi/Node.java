@@ -32,6 +32,7 @@ public interface Node {
      * @deprecated use buildEndpoint(), then call Endpoint.register(), fixes
      * synchronization problems, related to implicit behavior
      */
+    @Deprecated
     Endpoint registerApplication(Application application, String instance);
 
     /**

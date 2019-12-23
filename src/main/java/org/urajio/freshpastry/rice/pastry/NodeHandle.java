@@ -36,6 +36,7 @@ public abstract class NodeHandle extends org.urajio.freshpastry.rice.p2p.commona
      */
     public abstract Id getNodeId();
 
+    @Override
     public org.urajio.freshpastry.rice.p2p.commonapi.Id getId() {
         return getNodeId();
     }
@@ -47,6 +48,7 @@ public abstract class NodeHandle extends org.urajio.freshpastry.rice.p2p.commona
      * @return true if the node is alive, false otherwise.
      * @deprecated use PastryNode.isAlive(NodeHandle)
      */
+    @Override
     public final boolean isAlive() {
         return getLiveness() < LIVENESS_DEAD;
     }
@@ -66,6 +68,7 @@ public abstract class NodeHandle extends org.urajio.freshpastry.rice.p2p.commona
      *
      * @return true if node is currently alive.
      */
+    @Override
     public boolean checkLiveness() {
         return ping();
     }
@@ -80,6 +83,8 @@ public abstract class NodeHandle extends org.urajio.freshpastry.rice.p2p.commona
      * @return the proximity metric value
      * @deprecated use PastryNode.proximity() or Endpoint.proximity()
      */
+    @Deprecated
+    @Override
     public abstract int proximity();
 
     /**
@@ -90,11 +95,6 @@ public abstract class NodeHandle extends org.urajio.freshpastry.rice.p2p.commona
      * @return true if node is currently alive.
      */
     public abstract boolean ping();
-
-//  transient Exception ctor;
-//  public NodeHandle() {
-//    ctor = new Exception("ctor"); 
-//  }
 
     /**
      * Accessor method.
@@ -109,7 +109,6 @@ public abstract class NodeHandle extends org.urajio.freshpastry.rice.p2p.commona
      */
     public void assertLocalNode() {
         if (localnode == null) {
-//      ctor.printStackTrace();
             throw new RuntimeException("PANIC: localnode is null in " + this + "@" + System.identityHashCode(this));
         }
     }
@@ -120,6 +119,7 @@ public abstract class NodeHandle extends org.urajio.freshpastry.rice.p2p.commona
      * @param obj a nodehandle object
      * @return true if they are equal, false otherwise.
      */
+    @Override
     public abstract boolean equals(Object obj);
 
     /**
@@ -140,16 +140,19 @@ public abstract class NodeHandle extends org.urajio.freshpastry.rice.p2p.commona
      *
      * @return a hash code.
      */
+    @Override
     public abstract int hashCode();
 
     /**
      * @param msg
      * @deprecated use PastryNode.send() or Endpoint.send()
      */
+    @Deprecated
     public abstract void receiveMessage(Message msg);
 
     /****************** Overriding of the Observer pattern to include priority **********/
 
+    @Override
     public abstract void serialize(OutputBuffer buf) throws IOException;
 
     /**
@@ -160,6 +163,7 @@ public abstract class NodeHandle extends org.urajio.freshpastry.rice.p2p.commona
         obs = new ArrayList<>();
     }
 
+    @Override
     public void addObserver(Observer o) {
         addObserver(o, 0);
     }
@@ -186,23 +190,16 @@ public abstract class NodeHandle extends org.urajio.freshpastry.rice.p2p.commona
                         return;
                     }
                     // TODO: can optimize this if need be, make this look for the insertPoint.  For now, we're just going to add then sort.
-//        } else {
-//          if (op.pri <= priority) {
-//            insertPoint = i;
-//          }
                 }
             }
             obs.add(new ObsPri(o, priority));
-//      logger.log(this+"addObserver("+o+")list1:"+obs);
             Collections.sort(obs);
-//      logger.log(this+"addObserver("+o+")list2:"+obs);
         }
-//    super.addObserver(o);
     }
 
+    @Override
     public void deleteObserver(Observer o) {
         logger.debug(this + ".deleteObserver(" + o + ")");
-//    super.deleteObserver(o);
         synchronized (obs) {
             for (int i = 0; i < obs.size(); i++) {
                 ObsPri op = obs.get(i);
@@ -216,12 +213,11 @@ public abstract class NodeHandle extends org.urajio.freshpastry.rice.p2p.commona
         }
     }
 
+    @Override
     public void notifyObservers(Object arg) {
         List<ObsPri> l;
         synchronized (obs) {
             l = new ArrayList<>(obs);
-//      logger.log(this+"notifyObservers("+arg+")list1:"+obs);
-//      logger.log(this+"notifyObservers("+arg+")list2:"+l);
         }
         for (ObsPri op : l) {
             logger.debug(this + ".notifyObservers(" + arg + "):notifying " + op);
@@ -229,10 +225,12 @@ public abstract class NodeHandle extends org.urajio.freshpastry.rice.p2p.commona
         }
     }
 
+    @Override
     public synchronized int countObservers() {
         return obs.size();
     }
 
+    @Override
     public synchronized void deleteObservers() {
         obs.clear();
     }
@@ -245,7 +243,6 @@ public abstract class NodeHandle extends org.urajio.freshpastry.rice.p2p.commona
      */
     public void update(Object update) {
         logger.debug(this + ".update(" + update + ")" + countObservers());
-//    setChanged();
         notifyObservers(update);
         logger.debug(this + ".update(" + update + ")" + countObservers() + " done");
     }
@@ -264,6 +261,7 @@ public abstract class NodeHandle extends org.urajio.freshpastry.rice.p2p.commona
             pri = priority;
         }
 
+        @Override
         public int compareTo(ObsPri o) {
             int ret = o.pri - pri;
             if (ret == 0) {
@@ -273,10 +271,10 @@ public abstract class NodeHandle extends org.urajio.freshpastry.rice.p2p.commona
                     return System.identityHashCode(o) - System.identityHashCode(this);
                 }
             }
-//      System.out.println(this+".compareTo("+that+"):"+ret);
             return ret;
         }
 
+        @Override
         public String toString() {
             return obs + ":" + pri;
         }
