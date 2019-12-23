@@ -183,9 +183,7 @@ public class PastryNode extends Observable implements
   }
   
   public void setReadyStrategy(ReadyStrategy rs) {
-//    logger.log("setReadyStrategy("+rs+")");
-//    logger.logException("setReadyStrategy("+rs+")", new Exception());
-    readyStrategy = rs; 
+    this.readyStrategy = rs;
   }
   
   /**

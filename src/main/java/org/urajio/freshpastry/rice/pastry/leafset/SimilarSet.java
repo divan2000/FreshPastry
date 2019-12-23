@@ -221,7 +221,7 @@ public class SimilarSet extends Observable implements NodeSetEventSource, Serial
    * @deprecated use addNodeSetListener
    */
   public void addObserver(Observer o) {
-//    if (logger.level <= Logger.WARNING) logger.log("WARNING: Observer on RoutingTable is deprecated");
+//    logger.warn("WARNING: Observer on RoutingTable is deprecated");
     super.addObserver(o); 
   }
   
@@ -230,7 +230,7 @@ public class SimilarSet extends Observable implements NodeSetEventSource, Serial
    * @deprecated use removeNodeSetListener
    */
   public void deleteObserver(Observer o) {
-//    if (logger.level <= Logger.WARNING) logger.log("WARNING: Observer on RoutingTable is deprecated");
+//    logger.warn("WARNING: Observer on RoutingTable is deprecated");
     super.deleteObserver(o); 
   }
   

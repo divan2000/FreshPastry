@@ -1,7 +1,8 @@
 package org.urajio.freshpastry.rice.pastry.commonapi;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.urajio.freshpastry.rice.environment.Environment;
-import rice.environment.logging.Logger;
 import org.urajio.freshpastry.rice.environment.random.RandomSource;
 import org.urajio.freshpastry.rice.p2p.commonapi.*;
 
@@ -18,6 +19,7 @@ import java.security.*;
  * @author Peter Druschel
  */
 public class PastryIdFactory implements IdFactory {
+  private final static Logger logger = LoggerFactory.getLogger(PastryIdFactory.class);
 
   private MessageDigest md;
 
@@ -28,9 +30,7 @@ public class PastryIdFactory implements IdFactory {
     try {
       md = MessageDigest.getInstance("SHA");
     } catch ( NoSuchAlgorithmException e ) {
-      Logger logger = env.getLogManager().getLogger(getClass(), null);
-      if (logger.level <= Logger.SEVERE) logger.log(
-        "No SHA support!" );
+      logger.error("No SHA support!" );
     }
   }
       

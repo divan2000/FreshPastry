@@ -1,9 +1,10 @@
 package org.urajio.freshpastry.rice.pastry.transport;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.urajio.freshpastry.org.mpisws.p2p.transport.P2PSocket;
 import org.urajio.freshpastry.org.mpisws.p2p.transport.P2PSocketReceiver;
 import org.urajio.freshpastry.rice.environment.Environment;
-import rice.environment.logging.Logger;
 import org.urajio.freshpastry.rice.p2p.commonapi.appsocket.AppSocket;
 import org.urajio.freshpastry.rice.p2p.commonapi.appsocket.AppSocketReceiver;
 
@@ -11,13 +12,13 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public class SocketAdapter<Identifier> implements AppSocket, P2PSocketReceiver<Identifier> {
+  private final static Logger logger = LoggerFactory.getLogger(SocketAdapter.class);
+
   P2PSocket<Identifier> internal;
-  Logger logger;
   Environment environment;
   
   public SocketAdapter(P2PSocket<Identifier> socket, Environment env) {
     this.internal = socket;
-    this.logger = env.getLogManager().getLogger(SocketAdapter.class, null);
     this.environment = env;
   }
 
@@ -72,7 +73,7 @@ public class SocketAdapter<Identifier> implements AppSocket, P2PSocketReceiver<I
 
   public void receiveSelectResult(P2PSocket<Identifier> s,
       boolean canRead, boolean canWrite) throws IOException {
-    if (logger.level <= Logger.FINEST) logger.log(this+"rsr("+internal+","+canRead+","+canWrite+")");
+    logger.debug(this+"rsr("+internal+","+canRead+","+canWrite+")");
     if (canRead && canWrite && (reader == writer)) {      
       AppSocketReceiver temp = reader;
       reader = null;
@@ -84,7 +85,7 @@ public class SocketAdapter<Identifier> implements AppSocket, P2PSocketReceiver<I
     if (canRead) {      
       AppSocketReceiver temp = reader;
       if (temp== null) {
-        if (logger.level <= Logger.WARNING) logger.log("no reader in "+this+".rsr("+internal+","+canRead+","+canWrite+")");         
+        logger.warn("no reader in "+this+".rsr("+internal+","+canRead+","+canWrite+")");
       } else {
         reader = null;
         temp.receiveSelectResult(this, true, false);
@@ -94,7 +95,7 @@ public class SocketAdapter<Identifier> implements AppSocket, P2PSocketReceiver<I
     if (canWrite) {      
       AppSocketReceiver temp = writer;
       if (temp == null) {
-        if (logger.level <= Logger.WARNING) logger.log("no writer in "+this+".rsr("+internal+","+canRead+","+canWrite+")");        
+        logger.warn("no writer in "+this+".rsr("+internal+","+canRead+","+canWrite+")");
       } else {
         writer = null;
         temp.receiveSelectResult(this, false, true);

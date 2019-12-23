@@ -1,12 +1,13 @@
 package org.urajio.freshpastry.rice.pastry.commonapi;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.urajio.freshpastry.org.mpisws.p2p.transport.priority.PriorityTransportLayer;
 import org.urajio.freshpastry.org.mpisws.p2p.transport.util.OptionsFactory;
 import org.urajio.freshpastry.rice.Continuation;
 import org.urajio.freshpastry.rice.Destructable;
 import org.urajio.freshpastry.rice.Executable;
 import org.urajio.freshpastry.rice.environment.Environment;
-import rice.environment.logging.Logger;
 import org.urajio.freshpastry.rice.p2p.commonapi.*;
 import org.urajio.freshpastry.rice.p2p.commonapi.rawserialization.InputBuffer;
 import org.urajio.freshpastry.rice.p2p.commonapi.rawserialization.MessageDeserializer;
@@ -33,6 +34,7 @@ import java.util.*;
  * @author Peter Druschel
  */
 public class PastryEndpoint extends PastryAppl implements Endpoint {
+  private final static Logger logger = LoggerFactory.getLogger(PastryEndpoint.class);
 
   protected Application application;
     
@@ -43,7 +45,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
       try {
         return new PastryEndpointMessage(getAddress(),buf,appDeserializer,type, priority,(org.urajio.freshpastry.rice.pastry.NodeHandle)sender);
       } catch (IllegalArgumentException iae) {
-        logger.log("Unable to deserialize message of type "+type+" "+PastryEndpoint.this+" "+appDeserializer);
+        logger.info("Unable to deserialize message of type "+type+" "+PastryEndpoint.this+" "+appDeserializer);
         throw iae;
       }
 //    return null;
@@ -73,12 +75,8 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
     super(pn, 
         instance, 
         address == 0 ? StandardAddress.getAddress(application.getClass(),instance,pn.getEnvironment()): address, 
-        null, 
-        pn.getEnvironment().getLogManager().getLogger(application.getClass(),instance == null ? "-endpoint" : instance+"-endpoint"));
-//    logger.log("foo:"+logger.level);
-    
-//        pn.getEnvironment().getLogManager().getLogger(application.getClass(),instance == null ? "-endpoint" : instance+"-endpoint"));
-//    super(pn, application.getClass().getName() + instance, address, null);
+        null);
+
     appDeserializer = deserializer; // use this as the apps default deserializer
     deserializer = new PEDeserializer();
     this.application = application;
@@ -127,8 +125,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
   }
   
   public MessageReceipt route(Id key, Message msg, NodeHandle hint, DeliveryNotification deliverAckToMe, Map<String, Object> options) {
-    if (logger.level <= Logger.FINER) logger.log(
-      "[" + thePastryNode + "] route " + msg + " to " + key);
+    logger.debug("[" + thePastryNode + "] route " + msg + " to " + key);
 
     PastryEndpointMessage pm = new PastryEndpointMessage(this.getAddress(), msg, thePastryNode.getLocalHandle());
     return routeHelper(key, pm, hint, deliverAckToMe, options);
@@ -146,8 +143,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
     return route(key, msg, hint, deliverAckToMe, null);  
   }
   public MessageReceipt route(Id key, RawMessage msg, NodeHandle hint, DeliveryNotification deliverAckToMe, Map<String, Object> options) {
-    if (logger.level <= Logger.FINER) logger.log(
-        "[" + thePastryNode + "] route " + msg + " to " + key);
+    logger.debug("[" + thePastryNode + "] route " + msg + " to " + key);
 
     PastryEndpointMessage pm = new PastryEndpointMessage(this.getAddress(), msg, thePastryNode.getLocalHandle());
     return routeHelper(key, pm, hint, deliverAckToMe, options);
@@ -168,7 +164,8 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
    */
   private MessageReceipt routeHelper(Id key, final PastryEndpointMessage pm, final NodeHandle hint, final DeliveryNotification deliverAckToMe, Map<String, Object> options) { 
     if (options == null) options = this.options;
-    if (logger.level <= Logger.FINE) logger.log("routeHelper("+key+","+pm+","+hint+","+deliverAckToMe+").init()");
+    logger.debug("routeHelper("+key+","+pm+","+hint+","+deliverAckToMe+").init()");
+
     if ((key == null) && (hint == null)) {
       throw new IllegalArgumentException("key and hint are null!");
     }
@@ -198,7 +195,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
     final MessageReceipt ret = new MessageReceipt(){
       
       public boolean cancel() {
-        if (logger.level <= Logger.FINE) logger.log("routeHelper("+final_key+","+pm+","+hint+","+deliverAckToMe+").cancel()");
+        logger.debug("routeHelper("+final_key+","+pm+","+hint+","+deliverAckToMe+").cancel()");
         return rm.cancel();
       }
     
@@ -216,14 +213,14 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
     };
     
     // NOTE: Installing this anyway if the LogLevel is high enough is kind of wild, but really useful for debugging
-    if ((deliverAckToMe != null) || (logger.level <= Logger.FINE)) {
+    if ((deliverAckToMe != null) || (logger.isDebugEnabled())) {
       rm.setRouteMessageNotification(new RouteMessageNotification() {
         public void sendSuccess(org.urajio.freshpastry.rice.pastry.routing.RouteMessage message, org.urajio.freshpastry.rice.pastry.NodeHandle nextHop) {
-          if (logger.level <= Logger.FINE) logger.log("routeHelper("+final_key+","+pm+","+hint+","+deliverAckToMe+").sendSuccess():"+nextHop);
+          logger.debug("routeHelper("+final_key+","+pm+","+hint+","+deliverAckToMe+").sendSuccess():"+nextHop);
           if (deliverAckToMe != null) deliverAckToMe.sent(ret);
         }    
         public void sendFailed(org.urajio.freshpastry.rice.pastry.routing.RouteMessage message, Exception e) {
-          if (logger.level <= Logger.FINE) logger.log("routeHelper("+final_key+","+pm+","+hint+","+deliverAckToMe+").sendFailed("+e+")");
+          logger.debug("routeHelper("+final_key+","+pm+","+hint+","+deliverAckToMe+").sendFailed("+e+")");
           if (deliverAckToMe != null) deliverAckToMe.sendFailed(ret, e);
         }
       });
@@ -236,8 +233,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
 //      rOptions = new HashMap<String, Object>(options);
 //    }
 //    rOptions.put(PriorityTransportLayer.OPTION_PRIORITY, pm.getPriority());
-////    logger.log("NumOptions = "+rOptions.size());
-    
+
     rm.setTLOptions(OptionsFactory.addOption(options, PriorityTransportLayer.OPTION_PRIORITY, pm.getPriority()));
         
     thePastryNode.getRouter().route(rm);
@@ -364,8 +360,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
       throw new IllegalArgumentException("maximum replicaSet size for this configuration exceeded; asked for "+maxRank+" but max is "+(leafset.maxSize()/2+1));
     }
     if (maxRank > leafset.size()) {
-      if (logger.level <= Logger.FINER) logger.log(
-          "trying to get a replica set of size "+maxRank+" but only "+leafset.size()+" nodes in leafset");
+      logger.debug("trying to get a replica set of size "+maxRank+" but only "+leafset.size()+" nodes in leafset");
     }
     
     return leafset.replicaSet((org.urajio.freshpastry.rice.pastry.Id) id, maxRank);
@@ -460,30 +455,18 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
   // Upcall to Application support
 
   public final void messageForAppl(org.urajio.freshpastry.rice.pastry.messaging.Message msg) {
-    if (logger.level <= Logger.FINER) logger.log(
-        "[" + thePastryNode + "] deliver " + msg + " from " + msg.getSenderId());
-    
+    logger.debug("[" + thePastryNode + "] deliver " + msg + " from " + msg.getSenderId());
+
     if (msg instanceof PastryEndpointMessage) {
       // null for now, when RouteMessage stuff is completed, then it will be different!
       application.deliver(null, ((PastryEndpointMessage) msg).getMessage());
     } else {
-      if (logger.level <= Logger.WARNING) logger.log(
-          "Received unknown message " + msg + " - dropping on floor");
+      logger.warn("Received unknown message " + msg + " - dropping on floor");
     }
   }
 
   public final boolean enrouteMessage(org.urajio.freshpastry.rice.pastry.messaging.Message msg, org.urajio.freshpastry.rice.pastry.Id key, org.urajio.freshpastry.rice.pastry.NodeHandle nextHop, SendOptions opt) {
     throw new RuntimeException("Should not be called, should only be handled by PastryEndpoint.receiveMessage()");
-//    if (msg instanceof RouteMessage) {
-//      if (logger.level <= Logger.FINER) logger.log(
-//          "[" + thePastryNode + "] forward " + msg);
-//      boolean ret = application.forward((RouteMessage) msg);
-//      if (logger.level <= Logger.FINEST) logger.log(
-//          "[" + thePastryNode + "] forward " + msg + " forwarding?:"+ret);
-//      return ret;
-//    } else {
-//      return true;
-//    }
   }
 
   public void leafSetChange(org.urajio.freshpastry.rice.pastry.NodeHandle nh, boolean wasAdded) {
@@ -497,12 +480,11 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
    * @param msg the message that is arriving.
    */
   public void receiveMessage(org.urajio.freshpastry.rice.pastry.messaging.Message msg) {
-    if (logger.level <= Logger.FINER) logger.log(
-        "[" + thePastryNode + "] recv " + msg);
-      
+    logger.debug("[" + thePastryNode + "] recv " + msg);
+
     if (msg instanceof org.urajio.freshpastry.rice.pastry.routing.RouteMessage) {
       try {
-      rice.pastry.routing.RouteMessage rm = (org.urajio.freshpastry.rice.pastry.routing.RouteMessage) msg;
+        org.urajio.freshpastry.rice.pastry.routing.RouteMessage rm = (org.urajio.freshpastry.rice.pastry.routing.RouteMessage) msg;
       
       // if the message has a destinationHandle, it should be for me, and it should always be delivered
       NodeHandle destinationHandle = rm.getDestinationHandle();
@@ -512,7 +494,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
           (destinationHandle != null && destinationHandle == thePastryNode.getLocalHandle())) {
         // continue to receiveMessage()
       } else {
-        if (logger.level <= Logger.INFO) logger.log("Dropping "+msg+" because node is not ready.");
+        logger.info("Dropping "+msg+" because node is not ready.");
         // enable this if you want to forward RouteMessages when not ready, without calling the "forward()" method on the PastryAppl that sent the message
 //        rm.routeMessage(this.localNode.getLocalHandle());
         
@@ -521,8 +503,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
       }
       
       // call application
-      if (logger.level <= Logger.FINER) logger.log(
-          "[" + thePastryNode + "] forward " + msg);
+        logger.debug("[" + thePastryNode + "] forward " + msg);
       if (application.forward(rm)) {
         if (rm.getNextHop() != null) {
           org.urajio.freshpastry.rice.pastry.NodeHandle nextHop = rm.getNextHop();
@@ -530,8 +511,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
           // if the message is for the local node, deliver it here
           if (getNodeId().equals(nextHop.getNodeId())) {
             PastryEndpointMessage pMsg = (PastryEndpointMessage) rm.unwrap(deserializer);
-            if (logger.level <= Logger.FINER) logger.log(
-                "[" + thePastryNode + "] deliver " + pMsg + " from " + pMsg.getSenderId());
+            logger.debug("[" + thePastryNode + "] deliver " + pMsg + " from " + pMsg.getSenderId());
             application.deliver(rm.getTarget(), pMsg.getMessage());
             rm.sendSuccess(thePastryNode.getLocalHandle());
           } else {
@@ -540,7 +520,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
             // this message was directed just to me, but now we've decided to forward it, so, 
             // make it generally routable now
             if (rm.getDestinationHandle() == thePastryNode.getLocalHandle()) {
-              if (logger.level <= Logger.WARNING) logger.log("Warning, removing destNodeHandle: "+rm.getDestinationHandle()+" from "+rm);
+              logger.debug("Warning, removing destNodeHandle: "+rm.getDestinationHandle()+" from "+rm);
               rm.setDestinationHandle(null);
             }
             thePastryNode.getRouter().route(rm);
@@ -551,7 +531,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
         rm.sendSuccess(thePastryNode.getLocalHandle());
       }
       } catch (IOException ioe) {
-        if (logger.level <= Logger.SEVERE) logger.logException(this.toString(),ioe); 
+        logger.error(this.toString(),ioe);
       }
     } else {
       
@@ -639,7 +619,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
 
   public List<NodeHandle> networkNeighbors(int num) {
     HashSet<NodeHandle> handles = new HashSet<>();
-    List<org.urajio.freshpastry.rice.pastry.NodeHandle> l = (List<org.urajio.freshpastry.rice.pastry.NodeHandle>)thePastryNode.getRoutingTable().asList();
+    List<org.urajio.freshpastry.rice.pastry.NodeHandle> l = thePastryNode.getRoutingTable().asList();
     Iterator<org.urajio.freshpastry.rice.pastry.NodeHandle> i = l.iterator();
     while(i.hasNext()) {
       handles.add(i.next());
@@ -696,7 +676,6 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
 
   @Override
   public boolean deliverWhenNotReady() {
-//    logger.log("deliverWhenNotReady():"+!consistentRouting);
     return !consistentRouting;
   }
 
@@ -710,10 +689,4 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
   public void setSendOptions(Map<String, Object> options) {
     this.options = options;
   }
-
-
 }
-
-
-
-

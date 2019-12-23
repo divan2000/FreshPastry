@@ -1,7 +1,8 @@
 package org.urajio.freshpastry.rice.pastry.messaging;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.urajio.freshpastry.rice.Destructable;
-import rice.environment.logging.Logger;
 import org.urajio.freshpastry.rice.pastry.PastryNode;
 import org.urajio.freshpastry.rice.pastry.client.PastryAppl;
 import org.urajio.freshpastry.rice.pastry.transport.Deserializer;
@@ -27,6 +28,7 @@ import java.util.HashMap;
  */
 
 public class MessageDispatch implements Destructable {
+  private final static Logger logger = LoggerFactory.getLogger(MessageDispatch.class);
 
   // have modified from HashMap to HashMap to use the internal representation
   // of a LocalAddress.  Otherwise remote node cannot get its message delivered
@@ -34,9 +36,7 @@ public class MessageDispatch implements Destructable {
   private HashMap<Integer,PastryAppl> addressBook;
 
   protected PastryNode localNode;
-  
-  protected Logger logger;
-  
+
   /**
    * Also held by the transport layer to allow it to deserialize the messages.
    */
@@ -49,28 +49,22 @@ public class MessageDispatch implements Destructable {
     this.deserializer = deserializer;
     addressBook = new HashMap<>();
     this.localNode = pn;
-    this.logger = pn.getEnvironment().getLogManager().getLogger(getClass(), null);    
   }
 
   /**
    * Registers a receiver with the mail service.
    *
-   * @param name a name for a receiver.
+   * @param address a name for a receiver.
    * @param receiver the receiver.
    */
   public void registerReceiver(int address, PastryAppl receiver) {
     // the stack trace is to figure out who registered for what, it is not an error
     
 
-    
-    if (logger.level <= Logger.FINE) logger.log(
-        "Registering "+receiver+" for address " + address);
-    if (logger.level <= Logger.FINEST) logger.logException(
-        "Registering receiver for address " + address, new Exception("stack trace"));
+    logger.debug("Registering "+receiver+" for address " + address);
+    logger.debug("Registering receiver for address " + address, new Exception("stack trace"));
     if (addressBook.get(address) != null) {
       throw new IllegalArgumentException("Registering receiver for already-registered address " + address);
-//      if (logger.level <= Logger.SEVERE) logger.logException(
-//          "ERROR - Registering receiver for already-registered address " + address, new Exception("stack trace"));
     }
 
     deserializer.setDeserializer(address, receiver.getDeserializer());
@@ -98,21 +92,15 @@ public class MessageDispatch implements Destructable {
    */
   public boolean dispatchMessage(Message msg) {
     if (msg.getDestination() == 0) {
-      Logger logger = localNode.getEnvironment().getLogManager().getLogger(MessageDispatch.class, null);
-      if (logger.level <= Logger.WARNING) logger.logException(
-          "Message "+msg+","+msg.getClass().getName()+" has no destination.", new Exception("Stack Trace"));
+      logger.warn("Message "+msg+","+msg.getClass().getName()+" has no destination.", new Exception("Stack Trace"));
       return false;
     }
     // NOTE: There is no safety issue with calling localNode.isReady() because this is on the 
     // PastryThread, and the only way to set a node ready is also on the ready thread.
-    PastryAppl mr = (PastryAppl) addressBook.get(msg.getDestination());
+    PastryAppl mr = addressBook.get(msg.getDestination());
 
     if (mr == null) {
-      if ((logger.level <= Logger.FINE) ||
-          (localNode.isReady() && (logger.level <= Logger.INFO))) { 
-        logger.log(
-          "Dropping message " + msg + " because the application address " + msg.getDestination() + " is unknown.");
-      }
+        logger.debug("Dropping message " + msg + " because the application address " + msg.getDestination() + " is unknown.");
       return false;
     } else {
       mr.receiveMessage(msg); 
@@ -143,7 +131,7 @@ public class MessageDispatch implements Destructable {
   
   public void destroy() {
     for (PastryAppl mr : addressBook.values()) {
-      if (logger.level <= Logger.INFO) logger.log("Destroying " + mr);
+      logger.info("Destroying " + mr);
       mr.destroy();
     }      
     addressBook.clear();

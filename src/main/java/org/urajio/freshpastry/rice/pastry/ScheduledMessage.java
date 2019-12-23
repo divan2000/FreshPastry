@@ -1,6 +1,7 @@
 package org.urajio.freshpastry.rice.pastry;
 
-import rice.environment.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.urajio.freshpastry.rice.pastry.messaging.Message;
 import org.urajio.freshpastry.rice.selector.TimerTask;
 
@@ -13,16 +14,12 @@ import org.urajio.freshpastry.rice.selector.TimerTask;
  * @author Peter Druschel
  */
 public class ScheduledMessage extends TimerTask {
+  private final static Logger logger = LoggerFactory.getLogger(ScheduledMessage.class);
+
   protected PastryNode localNode;
 
   protected Message msg;
 
-  /**
-   * Constructor
-   * 
-   * @param the
-   *          message
-   */
   public ScheduledMessage(PastryNode pn, Message msg) {
     localNode = pn;
     this.msg = msg;
@@ -50,8 +47,7 @@ public class ScheduledMessage extends TimerTask {
       Message m = msg;
       if (m != null) localNode.receiveMessage(msg);
     } catch (Exception e) {
-      Logger logger = localNode.getEnvironment().getLogManager().getLogger(getClass(), null);
-      if (logger.level <= Logger.WARNING) logger.logException("Delivering " + this + " caused exception ", e);
+      logger.warn("Delivering " + this + " caused exception ", e);
     }
   }
 

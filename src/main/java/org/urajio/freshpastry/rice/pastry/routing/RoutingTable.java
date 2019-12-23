@@ -1,6 +1,7 @@
 package org.urajio.freshpastry.rice.pastry.routing;
 
-import rice.environment.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.urajio.freshpastry.rice.pastry.*;
 
 import java.util.*;
@@ -11,7 +12,7 @@ import java.util.*;
  * The size of this table is determined by two constants:
  * <P>
  * <UL>
- * <LI>{@link rice.pastry.Id#nodeIdBitLength nodeIdBitLength}which
+ * <LI>{@link org.urajio.freshpastry.rice.pastry.Id#nodeIdBitLength nodeIdBitLength}which
  * determines the number of bits in a node id (which we call <EM>n</EM>).
  * <LI>{@link RoutingTable#idBaseBitLength idBaseBitLength}which is the base
  * that table is stored in (which we call <EM>b</EM>).
@@ -34,6 +35,8 @@ import java.util.*;
  */
 
 public class RoutingTable extends Observable implements NodeSetEventSource {
+    private final static Logger logger = LoggerFactory.getLogger(RoutingTable.class);
+
     /**
      * The routing calculations will occur in base <EM>2 <SUP>idBaseBitLength
      * </SUP></EM>
@@ -51,8 +54,6 @@ public class RoutingTable extends Observable implements NodeSetEventSource {
 
     private int maxEntries;
 
-    Logger logger;
-
     final int cols, rows;
 
     /**
@@ -63,7 +64,6 @@ public class RoutingTable extends Observable implements NodeSetEventSource {
      */
 
     public RoutingTable(NodeHandle me, int max, byte base, PastryNode pn) {
-        logger = pn.getEnvironment().getLogManager().getLogger(RoutingTable.class,null);
         this.pn = pn;
         idBaseBitLength = base;
         myNodeId = me.getNodeId();
@@ -460,7 +460,7 @@ public class RoutingTable extends Observable implements NodeSetEventSource {
      */
 
     public synchronized boolean put(NodeHandle handle) {
-        if (logger.level <= Logger.FINER) logger.log("RT: put("+handle+")");
+        logger.debug("RT: put("+handle+")");
         Id nid = handle.getNodeId();
         RouteSet ns = makeBestEntry(nid);
 
@@ -537,28 +537,13 @@ public class RoutingTable extends Observable implements NodeSetEventSource {
         try {
             return routingTable[i];
         } catch (ArrayIndexOutOfBoundsException aioobe) {
-            if (logger.level <= Logger.WARNING) logger.log("Warning, call to RoutingTable.getRow("+i+") max should be "+(routingTable.length-1));
+            logger.warn("Warning, call to RoutingTable.getRow("+i+") max should be "+(routingTable.length-1));
             return null;
         }
     }
 
-    /**
-     * Removes a node id from the table.
-     *
-     * @param nid the node id to remove.
-     * @return the handle that was removed, or null if it did not exist.
-     */
-
-    //  public NodeHandle remove(Id nid)
-    //  {
-    //RouteSet ns = getBestEntry(nid);
-    //
-    //if (ns == null) return null;
-    //
-    //return ns.remove(nid);
-    //  }
     public synchronized NodeHandle remove(NodeHandle nh) {
-        if (logger.level <= Logger.FINER) logger.log("RT: remove("+nh+")");
+        logger.debug("RT: remove("+nh+")");
         RouteSet ns = getBestEntry(nh.getNodeId());
 
         if (ns == null)
@@ -567,33 +552,19 @@ public class RoutingTable extends Observable implements NodeSetEventSource {
         return ns.remove(nh);
     }
 
-    /**
-     * Is called by the Observer pattern whenever a RouteSet in this table has
-     * changed.
-     *
-     * @param o the RouteSet
-     * @param arg the event
-     */
-//  public void update(Observable o, Object arg) {
-//    // pass the event to the Observers of this RoutingTable
-//    setChanged();
-//    notifyObservers(arg);
-//  }
-
     public void nodeSetUpdate(Object o, NodeHandle handle, boolean added) {
-        if (logger.level <= Logger.FINE) {
             RouteSet rs = (RouteSet)o;
             if (added) {
-                logger.log("RT: added("+handle+")@("+rs.row+","+Id.tran[rs.col]+")");
+                logger.debug("RT: added("+handle+")@("+rs.row+","+Id.tran[rs.col]+")");
             } else {
-                logger.log("RT: removed("+handle+")@("+rs.row+","+Id.tran[rs.col]+")");
+                logger.debug("RT: removed("+handle+")@("+rs.row+","+Id.tran[rs.col]+")");
             }
-        }
+
 
         // pass the event to the Observers of this RoutingTable
         synchronized (listeners) {
             for (NodeSetListener listener : listeners) {
-                ((NodeSetListener) listener).nodeSetUpdate(this, handle, added);
+                listener.nodeSetUpdate(this, handle, added);
             }
         }
         // handle deprecated interface
@@ -706,7 +677,7 @@ public class RoutingTable extends Observable implements NodeSetEventSource {
      * @deprecated use addNodeSetListener
      */
     public void addObserver(Observer o) {
-        if (logger.level <= Logger.WARNING) logger.logException("WARNING: Observer on RoutingTable is deprecated", new Exception("Stack Trace"));
+        logger.warn("WARNING: Observer on RoutingTable is deprecated", new Exception("Stack Trace"));
         super.addObserver(o);
     }
 
@@ -715,7 +686,7 @@ public class RoutingTable extends Observable implements NodeSetEventSource {
      * @deprecated use deleteNodeSetListener
      */
     public void deleteObserver(Observer o) {
-        if (logger.level <= Logger.WARNING) logger.log("WARNING: Observer on RoutingTable is deprecated");
+        logger.warn("WARNING: Observer on RoutingTable is deprecated");
         super.deleteObserver(o);
     }
 

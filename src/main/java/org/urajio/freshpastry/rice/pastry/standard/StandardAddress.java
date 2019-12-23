@@ -1,7 +1,8 @@
 package org.urajio.freshpastry.rice.pastry.standard;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.urajio.freshpastry.rice.environment.Environment;
-import rice.environment.logging.Logger;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -14,6 +15,7 @@ import java.security.NoSuchAlgorithmException;
  * @author Alan Mislove
  */
 public class StandardAddress {
+  private final static Logger logger = LoggerFactory.getLogger(StandardAddress.class);
 
   //serial ver for backward compatibility
   private static final long serialVersionUID = 1564239935633411277L;
@@ -25,9 +27,7 @@ public class StandardAddress {
     try {
       md = MessageDigest.getInstance("SHA");
     } catch ( NoSuchAlgorithmException e ) {
-      Logger logger = env.getLogManager().getLogger(StandardAddress.class, null);
-      if (logger.level <= Logger.SEVERE) logger.log(
-        "No SHA support!" );
+      logger.error("No SHA support!" );
     }
     
     byte[] digest = new byte[4];

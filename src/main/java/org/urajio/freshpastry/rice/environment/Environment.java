@@ -1,13 +1,10 @@
 package org.urajio.freshpastry.rice.environment;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.urajio.freshpastry.rice.Destructable;
 import org.urajio.freshpastry.rice.environment.exception.ExceptionStrategy;
 import org.urajio.freshpastry.rice.environment.exception.simple.SimpleExceptionStrategy;
-import rice.environment.logging.CloneableLogManager;
-import rice.environment.logging.LogManager;
-import rice.environment.logging.Logger;
-import rice.environment.logging.file.FileLogManager;
-import rice.environment.logging.simple.SimpleLogManager;
 import org.urajio.freshpastry.rice.environment.params.Parameters;
 import org.urajio.freshpastry.rice.environment.params.simple.SimpleParameters;
 import org.urajio.freshpastry.rice.environment.processing.Processor;
@@ -26,7 +23,7 @@ import java.util.HashSet;
 
 
 /**
- * Used to provide properties, timesource, loggers etc to the FreePastry
+ * Used to provide properties, timesource etc to the FreePastry
  * apps and components.
  * 
  * XXX: Plan is to place the environment inside a PastryNode.
@@ -34,15 +31,15 @@ import java.util.HashSet;
  * @author Jeff Hoye
  */
 public class Environment implements Destructable {
+  private final static Logger logger = LoggerFactory.getLogger(Environment.class);
+
   public static final String[] defaultParamFileArray = {"freepastry"};
    
   private SelectorManager selectorManager;
   private Processor processor;
   private RandomSource randomSource;
   private TimeSource time;
-  private LogManager logManager;
   private Parameters params;
-  private Logger logger;
   private ExceptionStrategy exceptionStrategy;
 
   private HashSet<Destructable> destructables = new HashSet<>();
@@ -55,14 +52,11 @@ public class Environment implements Destructable {
    * @param sm the SelectorManager.  Default: rice.selector.SelectorManager
    * @param rs the RandomSource.  Default: rice.environment.random.simple.SimpleRandomSource
    * @param time the TimeSource.  Default: rice.environment.time.simple.SimpleTimeSource
-   * @param lm the LogManager.  Default: rice.environment.logging.simple.SimpleLogManager
-   * @param props the Properties.  Default: empty properties
    */
-  public Environment(SelectorManager sm, Processor proc, RandomSource rs, TimeSource time, LogManager lm, Parameters params, ExceptionStrategy strategy) {
+  public Environment(SelectorManager sm, Processor proc, RandomSource rs, TimeSource time, Parameters params, ExceptionStrategy strategy) {
     this.selectorManager = sm;    
     this.randomSource = rs;
-    this.time = time; 
-    this.logManager = lm;
+    this.time = time;
     this.params = params;
     this.processor = proc;
     this.exceptionStrategy = strategy;
@@ -73,8 +67,6 @@ public class Environment implements Destructable {
     
     // choose defaults for all non-specified parameters
     chooseDefaults();
-    logger = this.logManager.getLogger(getClass(), null);
-    
     
     this.selectorManager.setEnvironment(this);
     
@@ -89,16 +81,14 @@ public class Environment implements Destructable {
    * Convienience for defaults.
    * 
    * @param paramFileName the file where parameters are saved
-   * @throws IOException
    */
   public Environment(String[] orderedDefaultFiles, String paramFileName) {
-    this(null,null,null,null,null,new SimpleParameters(orderedDefaultFiles,paramFileName), null);
+    this(null,null,null,null, new SimpleParameters(orderedDefaultFiles,paramFileName), null);
   }
   
   public static Environment directEnvironment(int randomSeed) {
     SimpleRandomSource srs = new SimpleRandomSource(randomSeed, null);
     Environment env = directEnvironment(srs);
-    srs.setLogManager(env.getLogManager());
     return env;
   }
   
@@ -109,13 +99,11 @@ public class Environment implements Destructable {
   public static Environment directEnvironment(RandomSource rs) {
     Parameters params = new SimpleParameters(Environment.defaultParamFileArray,null);
     DirectTimeSource dts = new DirectTimeSource(params);
-    LogManager lm = generateDefaultLogManager(dts,params);
-    dts.setLogManager(lm);
-    SelectorManager selector = generateDefaultSelectorManager(dts,lm,rs);
+    SelectorManager selector = generateDefaultSelectorManager(dts,rs);
     dts.setSelectorManager(selector);
     Processor proc = new SimProcessor(selector);
-    return new Environment(selector,proc,rs,dts,lm,
-        params, generateDefaultExceptionStrategy(lm));
+    return new Environment(selector,proc,rs,dts,
+        params, generateDefaultExceptionStrategy());
   }
   
   public Environment(String paramFileName) {
@@ -140,14 +128,11 @@ public class Environment implements Destructable {
     if (time == null) {
       time = generateDefaultTimeSource(); 
     }
-    if (logManager == null) {
-      logManager = generateDefaultLogManager(time, params);
-    }
     if (randomSource == null) {
-      randomSource = generateDefaultRandomSource(params,logManager);
+      randomSource = generateDefaultRandomSource(params);
     }    
     if (selectorManager == null) {      
-      selectorManager = generateDefaultSelectorManager(time, logManager, randomSource); 
+      selectorManager = generateDefaultSelectorManager(time, randomSource);
     }
     if (processor == null) {    
       if (params.contains("environment_use_sim_processor") &&
@@ -159,20 +144,20 @@ public class Environment implements Destructable {
     }
     
     if (exceptionStrategy == null) {
-      exceptionStrategy = generateDefaultExceptionStrategy(logManager); 
+      exceptionStrategy = generateDefaultExceptionStrategy();
     }
   }
 
-  public static ExceptionStrategy generateDefaultExceptionStrategy(LogManager manager) {
-    return new SimpleExceptionStrategy(manager);
+  public static ExceptionStrategy generateDefaultExceptionStrategy() {
+    return new SimpleExceptionStrategy();
   }
   
-  public static RandomSource generateDefaultRandomSource(Parameters params, LogManager logging) {
+  public static RandomSource generateDefaultRandomSource(Parameters params) {
     RandomSource randomSource;
     if (params.getString("random_seed").equalsIgnoreCase("clock")) {
-      randomSource = new SimpleRandomSource(logging);
+      randomSource = new SimpleRandomSource();
     } else {
-      randomSource = new SimpleRandomSource(params.getLong("random_seed"), logging);      
+      randomSource = new SimpleRandomSource(params.getLong("random_seed"));
     }
       
     return randomSource;
@@ -181,16 +166,9 @@ public class Environment implements Destructable {
   public static TimeSource generateDefaultTimeSource() {
     return new SimpleTimeSource();
   }
-  
-  public static LogManager generateDefaultLogManager(TimeSource time, Parameters params) {
-    if (params.getBoolean("environment_logToFile")) {
-      return new FileLogManager(time, params); 
-    }
-    return new SimpleLogManager(time, params); 
-  }
-  
-  public static SelectorManager generateDefaultSelectorManager(TimeSource time, LogManager logging, RandomSource randomSource) {
-    return new SelectorManager("Default", time, logging, randomSource);
+
+  public static SelectorManager generateDefaultSelectorManager(TimeSource time, RandomSource randomSource) {
+    return new SelectorManager("Default", time, randomSource);
   }
   
   public static Processor generateDefaultProcessor() {
@@ -210,9 +188,6 @@ public class Environment implements Destructable {
   public TimeSource getTimeSource() {
     return time; 
   }
-  public LogManager getLogManager() {
-    return logManager; 
-  }
   public Parameters getParameters() {
     return params; 
   }
@@ -224,8 +199,8 @@ public class Environment implements Destructable {
   public void destroy() {
     try {
       params.store();
-    } catch (IOException ioe) {      
-      if (logger.level <= Logger.WARNING) logger.logException("Error during shutdown",ioe); 
+    } catch (IOException ioe) {
+      logger.warn("Error during shutdown",ioe);
     }
     if (getSelectorManager().isSelectorThread()) {
       callDestroyOnDestructables();
@@ -248,7 +223,7 @@ public class Environment implements Destructable {
 
   public void addDestructable(Destructable destructable) {
     if (destructable == null) {
-      if (logger.level <= Logger.WARNING) logger.logException("addDestructable(null)", new Exception("Stack Trace"));
+      logger.warn("addDestructable(null)", new Exception("Stack Trace"));
       return;
     }
     destructables.add(destructable);
@@ -257,7 +232,7 @@ public class Environment implements Destructable {
   
   public void removeDestructable(Destructable destructable) {
     if (destructable == null) {
-      if (logger.level <= Logger.WARNING) logger.logException("addDestructable(null)", new Exception("Stack Trace"));
+      logger.warn("addDestructable(null)", new Exception("Stack Trace"));
       return;
     }
     destructables.remove(destructable);
@@ -277,22 +252,20 @@ public class Environment implements Destructable {
   }
   
   public Environment cloneEnvironment(String prefix, boolean cloneSelector, boolean cloneProcessor) {
-    // new logManager
-    LogManager lman = cloneLogManager(prefix);
 
-    TimeSource ts = cloneTimeSource(lman);
+    TimeSource ts = cloneTimeSource();
     
     // new random source
-    RandomSource rand = cloneRandomSource(lman);
+    RandomSource rand = cloneRandomSource();
     
     // new selector
-    SelectorManager sman = cloneSelectorManager(prefix, ts, rand, lman, cloneSelector);
+    SelectorManager sman = cloneSelectorManager(prefix, ts, rand, cloneSelector);
     
     // new processor
-    Processor proc = cloneProcessor(prefix, lman, cloneProcessor);
+    Processor proc = cloneProcessor(prefix, cloneProcessor);
         
     // build the environment
-    Environment ret = new Environment(sman, proc, rand, getTimeSource(), lman,
+    Environment ret = new Environment(sman, proc, rand, getTimeSource(),
         getParameters(), getExceptionStrategy());
   
     // gain shared fate with the rootEnvironment
@@ -301,28 +274,20 @@ public class Environment implements Destructable {
     return ret;
   }
 
-  protected TimeSource cloneTimeSource(LogManager lman) {
+  protected TimeSource cloneTimeSource() {
     return getTimeSource();
   }
   
-  protected LogManager cloneLogManager(String prefix) {
-    LogManager lman = getLogManager();
-    if (lman instanceof CloneableLogManager) {
-      lman = ((CloneableLogManager) getLogManager()).clone(prefix);
-    }
-    return lman;
-  }
-  
-  protected SelectorManager cloneSelectorManager(String prefix, TimeSource ts, RandomSource rs, LogManager lman, boolean cloneSelector) {
+  protected SelectorManager cloneSelectorManager(String prefix, TimeSource ts, RandomSource rs, boolean cloneSelector) {
     SelectorManager sman = getSelectorManager();
     if (cloneSelector) {
       sman = new SelectorManager(prefix + " Selector",
-          ts, lman, rs);
+          ts, rs);
     }
     return sman;
   }
   
-  protected Processor cloneProcessor(String prefix, LogManager lman, boolean cloneProcessor) {
+  protected Processor cloneProcessor(String prefix, boolean cloneProcessor) {
     Processor proc = getProcessor();
     if (cloneProcessor) {
       proc = new SimpleProcessor(prefix + " Processor");
@@ -331,9 +296,9 @@ public class Environment implements Destructable {
     return proc;
   }
   
-  protected RandomSource cloneRandomSource(LogManager lman) {
+  protected RandomSource cloneRandomSource() {
     long randSeed = getRandomSource().nextLong();
-    return new SimpleRandomSource(randSeed, lman);    
+    return new SimpleRandomSource(randSeed);
   }
 }
 
