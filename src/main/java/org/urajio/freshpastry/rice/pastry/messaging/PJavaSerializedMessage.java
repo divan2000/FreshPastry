@@ -1,9 +1,11 @@
 package org.urajio.freshpastry.rice.pastry.messaging;
 
-import java.io.*;
-
 import org.urajio.freshpastry.rice.p2p.commonapi.rawserialization.OutputBuffer;
 import org.urajio.freshpastry.rice.p2p.util.rawserialization.JavaSerializationException;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 
 
 /**

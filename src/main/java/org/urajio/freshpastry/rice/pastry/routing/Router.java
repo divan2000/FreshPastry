@@ -1,9 +1,9 @@
 package org.urajio.freshpastry.rice.pastry.routing;
 
-import java.util.Iterator;
-
 import org.urajio.freshpastry.rice.pastry.Id;
 import org.urajio.freshpastry.rice.pastry.NodeHandle;
+
+import java.util.Iterator;
 
 /**
  * Router is no longer just an application.  It is privileged.

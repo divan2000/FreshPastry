@@ -1,6 +1,7 @@
 package org.urajio.freshpastry.rice.pastry.leafset;
 
-import org.urajio.freshpastry.rice.p2p.commonapi.*;
+import org.urajio.freshpastry.rice.p2p.commonapi.NodeHandle;
+import org.urajio.freshpastry.rice.p2p.commonapi.RangeCannotBeDeterminedException;
 
 /**
  * @author Jeff Hoye

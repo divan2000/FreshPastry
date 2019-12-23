@@ -1,9 +1,11 @@
 package org.urajio.freshpastry.rice.p2p.util.rawserialization;
 
-import java.io.*;
-import java.nio.ByteBuffer;
-
 import org.urajio.freshpastry.rice.p2p.commonapi.rawserialization.InputBuffer;
+
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 
 public class SimpleInputBuffer extends DataInputStream implements InputBuffer {
   ByteArrayInputStream bais;

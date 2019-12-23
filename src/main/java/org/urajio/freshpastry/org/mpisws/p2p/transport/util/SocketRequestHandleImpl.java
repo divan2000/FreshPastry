@@ -1,12 +1,11 @@
 package org.urajio.freshpastry.org.mpisws.p2p.transport.util;
 
-import java.util.Map;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.urajio.freshpastry.org.mpisws.p2p.transport.SocketRequestHandle;
-
 import org.urajio.freshpastry.rice.p2p.commonapi.Cancellable;
+
+import java.util.Map;
 
 public class SocketRequestHandleImpl<Identifier> implements SocketRequestHandle<Identifier> {
   private static final Logger logger = LoggerFactory.getLogger(SocketRequestHandleImpl.class);

@@ -1,9 +1,10 @@
 package org.urajio.freshpastry.rice.pastry.messaging;
 
-import java.io.*;
-import java.util.*;
+import org.urajio.freshpastry.rice.pastry.Id;
+import org.urajio.freshpastry.rice.pastry.NodeHandle;
 
-import org.urajio.freshpastry.rice.pastry.*;
+import java.io.Serializable;
+import java.util.Date;
 
 /**
  * This is an abstract implementation of a message object.

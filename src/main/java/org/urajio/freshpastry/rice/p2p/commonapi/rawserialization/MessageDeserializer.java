@@ -1,8 +1,9 @@
 package org.urajio.freshpastry.rice.p2p.commonapi.rawserialization;
 
-import java.io.IOException;
+import org.urajio.freshpastry.rice.p2p.commonapi.Message;
+import org.urajio.freshpastry.rice.p2p.commonapi.NodeHandle;
 
-import org.urajio.freshpastry.rice.p2p.commonapi.*;
+import java.io.IOException;
 
 /**
  * Because Pastry/Transport layer cannot know about all messge types, each app needs to 

@@ -1,8 +1,10 @@
 package org.urajio.freshpastry.rice.pastry;
 
-import java.io.*;
+import org.urajio.freshpastry.rice.p2p.commonapi.rawserialization.InputBuffer;
+import org.urajio.freshpastry.rice.p2p.commonapi.rawserialization.OutputBuffer;
 
-import org.urajio.freshpastry.rice.p2p.commonapi.rawserialization.*;
+import java.io.IOException;
+import java.io.Serializable;
 
 /**
  * Represents a contiguous range of Pastry ids. *

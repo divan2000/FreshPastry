@@ -2,7 +2,8 @@ package org.urajio.freshpastry.rice.environment.processing.simple;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.urajio.freshpastry.rice.*;
+import org.urajio.freshpastry.rice.Continuation;
+import org.urajio.freshpastry.rice.Executable;
 import org.urajio.freshpastry.rice.environment.time.TimeSource;
 import org.urajio.freshpastry.rice.p2p.commonapi.Cancellable;
 import org.urajio.freshpastry.rice.selector.SelectorManager;

@@ -1,7 +1,9 @@
 package org.urajio.freshpastry.rice.environment.processing.sim;
 
-import org.urajio.freshpastry.rice.*;
-import org.urajio.freshpastry.rice.environment.processing.*;
+import org.urajio.freshpastry.rice.Continuation;
+import org.urajio.freshpastry.rice.Executable;
+import org.urajio.freshpastry.rice.environment.processing.Processor;
+import org.urajio.freshpastry.rice.environment.processing.WorkRequest;
 import org.urajio.freshpastry.rice.environment.processing.simple.ProcessingRequest;
 import org.urajio.freshpastry.rice.environment.time.TimeSource;
 import org.urajio.freshpastry.rice.p2p.commonapi.Cancellable;

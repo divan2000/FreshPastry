@@ -1,11 +1,11 @@
 package org.urajio.freshpastry.rice.environment.random.simple;
 
-import java.net.InetAddress;
-import java.util.Random;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.urajio.freshpastry.rice.environment.random.RandomSource;
+
+import java.net.InetAddress;
+import java.util.Random;
 
 /**
  * @author Jeff Hoye

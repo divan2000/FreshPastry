@@ -1,8 +1,11 @@
 package org.urajio.freshpastry.rice.pastry;
 
-import java.util.*;
-import java.security.*;
-import org.urajio.freshpastry.rice.p2p.util.*;
+import org.urajio.freshpastry.rice.p2p.util.RedBlackMap;
+
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Iterator;
+import java.util.SortedMap;
 
 /**
  * Represents a set of Pastry ids.

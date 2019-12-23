@@ -6,8 +6,10 @@ import org.urajio.freshpastry.rice.environment.Environment;
 import org.urajio.freshpastry.rice.environment.random.RandomSource;
 import org.urajio.freshpastry.rice.p2p.commonapi.*;
 
-import java.util.*;
-import java.security.*;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Random;
+import java.util.SortedMap;
 
 /**
  * This class provides applications with a way of genertating
