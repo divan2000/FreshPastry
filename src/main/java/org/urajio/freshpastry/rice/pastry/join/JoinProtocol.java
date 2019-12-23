@@ -5,9 +5,9 @@ import org.urajio.freshpastry.rice.pastry.NodeHandle;
 import java.util.Collection;
 
 public interface JoinProtocol {
-  void initiateJoin(Collection<NodeHandle> bootstrap);
+    void initiateJoin(Collection<NodeHandle> bootstrap);
 
-  
+
 //  @Override
 //  public void initiateJoin(Collection<NodeHandle> bootstrap) {
 //    if (logger.level <= Logger.CONFIG) logger.log(
@@ -31,7 +31,6 @@ public interface JoinProtocol {
 //    }
 //    // cancel join retransmissions
 //  }
-
 
 
 }

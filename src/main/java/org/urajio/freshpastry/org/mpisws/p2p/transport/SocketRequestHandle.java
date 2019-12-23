@@ -7,21 +7,22 @@ import java.util.Map;
 /**
  * Can cancel the request to open the socket.  Also, returned with the
  * socket when it has been opened.
- * 
- * @author Jeff Hoye
  *
  * @param <Identifier>
+ * @author Jeff Hoye
  */
 public interface SocketRequestHandle<Identifier> extends Cancellable {
-  /**
-   * The identifier that the caller requested to open to.
-   * @return
-   */
-  Identifier getIdentifier();
-  
-  /**
-   * The options that the caller used.
-   * @return
-   */
-  Map<String, Object> getOptions();
+    /**
+     * The identifier that the caller requested to open to.
+     *
+     * @return
+     */
+    Identifier getIdentifier();
+
+    /**
+     * The options that the caller used.
+     *
+     * @return
+     */
+    Map<String, Object> getOptions();
 }

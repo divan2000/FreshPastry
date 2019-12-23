@@ -7,32 +7,32 @@ import java.util.concurrent.PriorityBlockingQueue;
  */
 public class ProcessingThread extends Thread {
 
-  PriorityBlockingQueue<ProcessingRequest> queue;
+    PriorityBlockingQueue<ProcessingRequest> queue;
 
-  volatile boolean running = false;
+    volatile boolean running = false;
 
-  public ProcessingThread(String name,
-      PriorityBlockingQueue<ProcessingRequest> queue) {
-    super(name);
-    this.queue = queue;
-  }
-
-  public void run() {
-    running = true;
-    while (running) {
-      try {
-        ProcessingRequest e = queue.take();
-        if (e != null)
-          e.run();
-      } catch (java.lang.InterruptedException ie) {
-        // do nothing (maybe should call errorHandler)
-      }
+    public ProcessingThread(String name,
+                            PriorityBlockingQueue<ProcessingRequest> queue) {
+        super(name);
+        this.queue = queue;
     }
-  }
 
-  @SuppressWarnings("deprecation")
-  public void destroy() {
-    running = false;
-    interrupt();
-  }
+    public void run() {
+        running = true;
+        while (running) {
+            try {
+                ProcessingRequest e = queue.take();
+                if (e != null)
+                    e.run();
+            } catch (java.lang.InterruptedException ie) {
+                // do nothing (maybe should call errorHandler)
+            }
+        }
+    }
+
+    @SuppressWarnings("deprecation")
+    public void destroy() {
+        running = false;
+        interrupt();
+    }
 }

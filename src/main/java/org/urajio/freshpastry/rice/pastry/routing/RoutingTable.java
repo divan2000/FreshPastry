@@ -8,16 +8,16 @@ import java.util.*;
 
 /**
  * The Pastry routing table.
- * <P>
+ * <p>
  * The size of this table is determined by two constants:
- * <P>
+ * <p>
  * <UL>
  * <LI>{@link org.urajio.freshpastry.rice.pastry.Id#nodeIdBitLength nodeIdBitLength}which
  * determines the number of bits in a node id (which we call <EM>n</EM>).
  * <LI>{@link RoutingTable#idBaseBitLength idBaseBitLength}which is the base
  * that table is stored in (which we call <EM>b</EM>).
  * </UL>
- * <P>
+ * <p>
  * We write out node ids as numbers in base <EM>2 <SUP>b </SUP></EM>. They
  * will have length <EM>D = ceiling(log <SUB>2 <SUP>b </SUP> </SUB> 2 <SUP>n
  * </SUP>)</EM>. The table is stored from <EM>0...(D-1)</EM> by <EM>0...(2
@@ -28,38 +28,107 @@ import java.util.*;
  * <EM>digit</EM>. An <EM>index</EM> of <EM>0</EM> is the least
  * significant digit.
  *
- * @version $Id$
- *
  * @author Andrew Ladd
  * @author Peter Druschel
+ * @version $Id$
  */
 
 public class RoutingTable extends Observable implements NodeSetEventSource {
+    public static final int TEST_FAIL_NO_PREFIX_MATCH = -1;
+    public static final int TEST_FAIL_EXISTING_ARE_BETTER = 0;
+    public static final int TEST_SUCCESS_BETTER_PROXIMITY = 1;
+    public static final int TEST_SUCCESS_ENTRY_WAS_DEAD = 2;
+    public static final int TEST_SUCCESS_AVAILABLE_SPACE = 3;
+    public static final int TEST_SUCCESS_NO_ENTRIES = 4;
     private final static Logger logger = LoggerFactory.getLogger(RoutingTable.class);
-
+    final int cols, rows;
+    final ArrayList<NodeSetListener> listeners = new ArrayList<>();
     /**
      * The routing calculations will occur in base <EM>2 <SUP>idBaseBitLength
      * </SUP></EM>
      */
 
     public byte idBaseBitLength;// = 4;
-
-    private Id myNodeId;
-
     public NodeHandle myNodeHandle;
-
     protected PastryNode pn;
-
+    private Id myNodeId;
     private RouteSet[][] routingTable;
-
     private int maxEntries;
 
-    final int cols, rows;
+    /**
+     * Starting with the diffDigit, get everyone in the table that is closer to the key than me
+     *
+     * This can easily be sped up by building the iterator at each row as needed.
+     *
+     * Always return the prefix-match first
+     *
+     * @param key
+     * @return
+     */
+//  public Iterator<NodeHandle> alternateRoutesIterator(final Id key) {
+//    int diffDigit = myNodeId.indexOfMSDD(key, idBaseBitLength);
+//    if (diffDigit < 0)
+//      return Collections.EMPTY_LIST.iterator(); // return an empty iterator
+//
+//    int keyDigit = key.getDigit(diffDigit, idBaseBitLength);
+//    final Id.Distance myDistance = myNodeId.distance(key);
+//
+//
+//    Tuple<NodeHandle, Id.Distance> prefixMatch = null;
+//
+//    final ArrayList<Tuple<NodeHandle, Id.Distance>> ret = new ArrayList<Tuple<NodeHandle, Id.Distance>>();
+//    for (int row = diffDigit; row >= 0; row--) {
+//      int numInRow = 0;
+//      for (int col = 0; col < cols; col++) {
+//        RouteSet rs = routingTable[row][col];
+//        if (rs != null) {
+//          for (int k = 0; k < rs.size(); k++) {
+//            NodeHandle nh = rs.get(k);
+//            if (!nh.equals(myNodeHandle)) {
+//              numInRow++;
+//              Id.Distance nDist = nh.getNodeId().distance(key);
+//              if () {
+//
+//              }
+//              if (myDistance.compareTo(nDist) > 0) {
+//                ret.add(new Tuple<NodeHandle, Id.Distance>(nh,nDist));
+//              }
+//            }
+//          }
+//        }
+//      }
+//      if (numInRow == 0) break;
+//    }
+//
+//    Collections.sort(ret, new Comparator<Tuple<NodeHandle, Id.Distance>>(){
+//
+//      public int compare(Tuple<NodeHandle, Id.Distance> o1,
+//          Tuple<NodeHandle, Id.Distance> o2) {
+//        return o1.b().compareTo(o2.b());
+//      }});
+//
+//    final Iterator<Tuple<NodeHandle, Id.Distance>> itr = ret.iterator();
+//
+//    return new Iterator<NodeHandle>() {
+//
+//      public void remove() {
+//
+//      }
+//
+//      public NodeHandle next() {
+//        return itr.next().a();
+//      }
+//
+//      public boolean hasNext() {
+//        return itr.hasNext();
+//      }
+//    };
+//  }
 
     /**
      * Constructor.
      *
-     * @param me the node id for this routing table.
+     * @param me  the node id for this routing table.
      * @param max the maximum number of entries at each table slot.
      */
 
@@ -78,7 +147,7 @@ public class RoutingTable extends Observable implements NodeSetEventSource {
         for (int i = 0; i < rows; i++) {
             int myCol = myNodeId.getDigit(i, idBaseBitLength);
             // insert this node at the appropriate column
-            routingTable[i][myCol] = new RouteSet(maxEntries,i,myCol, pn, myNodeHandle);
+            routingTable[i][myCol] = new RouteSet(maxEntries, i, myCol, pn, myNodeHandle);
             routingTable[i][myCol].setRoutingTable(this);
         }
     }
@@ -100,7 +169,7 @@ public class RoutingTable extends Observable implements NodeSetEventSource {
      */
 
     public short numRows() {
-        return (short)routingTable.length;
+        return (short) routingTable.length;
     }
 
     /**
@@ -225,77 +294,8 @@ public class RoutingTable extends Observable implements NodeSetEventSource {
     }
 
     /**
-     * Starting with the diffDigit, get everyone in the table that is closer to the key than me
-     *
-     * This can easily be sped up by building the iterator at each row as needed.
-     *
-     * Always return the prefix-match first
-     *
-     * @param key
-     * @return
-     */
-//  public Iterator<NodeHandle> alternateRoutesIterator(final Id key) {
-//    int diffDigit = myNodeId.indexOfMSDD(key, idBaseBitLength);
-//    if (diffDigit < 0)
-//      return Collections.EMPTY_LIST.iterator(); // return an empty iterator
-//
-//    int keyDigit = key.getDigit(diffDigit, idBaseBitLength);
-//    final Id.Distance myDistance = myNodeId.distance(key);
-//
-//
-//    Tuple<NodeHandle, Id.Distance> prefixMatch = null;
-//
-//    final ArrayList<Tuple<NodeHandle, Id.Distance>> ret = new ArrayList<Tuple<NodeHandle, Id.Distance>>();
-//    for (int row = diffDigit; row >= 0; row--) {
-//      int numInRow = 0;
-//      for (int col = 0; col < cols; col++) {
-//        RouteSet rs = routingTable[row][col];
-//        if (rs != null) {
-//          for (int k = 0; k < rs.size(); k++) {
-//            NodeHandle nh = rs.get(k);
-//            if (!nh.equals(myNodeHandle)) {
-//              numInRow++;
-//              Id.Distance nDist = nh.getNodeId().distance(key);
-//              if () {
-//
-//              }
-//              if (myDistance.compareTo(nDist) > 0) {
-//                ret.add(new Tuple<NodeHandle, Id.Distance>(nh,nDist));
-//              }
-//            }
-//          }
-//        }
-//      }
-//      if (numInRow == 0) break;
-//    }
-//
-//    Collections.sort(ret, new Comparator<Tuple<NodeHandle, Id.Distance>>(){
-//
-//      public int compare(Tuple<NodeHandle, Id.Distance> o1,
-//          Tuple<NodeHandle, Id.Distance> o2) {
-//        return o1.b().compareTo(o2.b());
-//      }});
-//
-//    final Iterator<Tuple<NodeHandle, Id.Distance>> itr = ret.iterator();
-//
-//    return new Iterator<NodeHandle>() {
-//
-//      public void remove() {
-//
-//      }
-//
-//      public NodeHandle next() {
-//        return itr.next().a();
-//      }
-//
-//      public boolean hasNext() {
-//        return itr.hasNext();
-//      }
-//    };
-//  }
-
-    /**
      * More efficient implementation, but less accurate, doesn't include lower levels of rt.
+     *
      * @param key
      * @return
      */
@@ -316,6 +316,7 @@ public class RoutingTable extends Observable implements NodeSetEventSource {
             NodeHandle next = null;
             RouteSet rs = null;
             int digit;
+
             {
                 // initialize rs
                 digit = (j == 0) ?
@@ -369,7 +370,6 @@ public class RoutingTable extends Observable implements NodeSetEventSource {
                 }
 
 
-
                 return null;
             }
 
@@ -394,17 +394,15 @@ public class RoutingTable extends Observable implements NodeSetEventSource {
         };
     }
 
-
     /**
      * Gets the set of handles at a particular entry in the table.
      *
      * @param index the index of the digit in base <EM>2 <SUP>idBaseBitLength
-     *          </SUP></EM>.<EM>0</EM> is the least significant.
+     *              </SUP></EM>.<EM>0</EM> is the least significant.
      * @param digit ranges from <EM>0... 2 <SUP>idBaseBitLength - 1 </SUP></EM>.
-     *          Selects which digit to use.
-     *
+     *              Selects which digit to use.
      * @return a read-only set of possible handles located at that position in the
-     *         routing table, or null if none are known
+     * routing table, or null if none are known
      */
 
     public RouteSet getRouteSet(int index, int digit) {
@@ -417,7 +415,6 @@ public class RoutingTable extends Observable implements NodeSetEventSource {
      * the local Id.
      *
      * @param key the key
-     *
      * @return a read-only set of possible handles, or null if none are known
      */
 
@@ -434,7 +431,6 @@ public class RoutingTable extends Observable implements NodeSetEventSource {
      * Like getBestEntry, but creates an entry if none currently exists.
      *
      * @param key the key
-     *
      * @return a read-only set of possible handles
      */
 
@@ -446,7 +442,7 @@ public class RoutingTable extends Observable implements NodeSetEventSource {
 
         if (routingTable[diffDigit][digit] == null) {
             // allocate a RouteSet
-            routingTable[diffDigit][digit] = new RouteSet(maxEntries,diffDigit,digit, pn);
+            routingTable[diffDigit][digit] = new RouteSet(maxEntries, diffDigit, digit, pn);
             routingTable[diffDigit][digit].setRoutingTable(this);
         }
 
@@ -460,7 +456,7 @@ public class RoutingTable extends Observable implements NodeSetEventSource {
      */
 
     public synchronized boolean put(NodeHandle handle) {
-        logger.debug("RT: put("+handle+")");
+        logger.debug("RT: put(" + handle + ")");
         Id nid = handle.getNodeId();
         RouteSet ns = makeBestEntry(nid);
 
@@ -470,13 +466,6 @@ public class RoutingTable extends Observable implements NodeSetEventSource {
 
         return false;
     }
-
-    public static final int TEST_FAIL_NO_PREFIX_MATCH = -1;
-    public static final int TEST_FAIL_EXISTING_ARE_BETTER = 0;
-    public static final int TEST_SUCCESS_BETTER_PROXIMITY = 1;
-    public static final int TEST_SUCCESS_ENTRY_WAS_DEAD = 2;
-    public static final int TEST_SUCCESS_AVAILABLE_SPACE = 3;
-    public static final int TEST_SUCCESS_NO_ENTRIES = 4;
 
     public synchronized int test(NodeHandle handle) {
         // get the location in the RT
@@ -537,13 +526,13 @@ public class RoutingTable extends Observable implements NodeSetEventSource {
         try {
             return routingTable[i];
         } catch (ArrayIndexOutOfBoundsException aioobe) {
-            logger.warn("Warning, call to RoutingTable.getRow("+i+") max should be "+(routingTable.length-1));
+            logger.warn("Warning, call to RoutingTable.getRow(" + i + ") max should be " + (routingTable.length - 1));
             return null;
         }
     }
 
     public synchronized NodeHandle remove(NodeHandle nh) {
-        logger.debug("RT: remove("+nh+")");
+        logger.debug("RT: remove(" + nh + ")");
         RouteSet ns = getBestEntry(nh.getNodeId());
 
         if (ns == null)
@@ -553,12 +542,12 @@ public class RoutingTable extends Observable implements NodeSetEventSource {
     }
 
     public void nodeSetUpdate(Object o, NodeHandle handle, boolean added) {
-            RouteSet rs = (RouteSet)o;
-            if (added) {
-                logger.debug("RT: added("+handle+")@("+rs.row+","+Id.tran[rs.col]+")");
-            } else {
-                logger.debug("RT: removed("+handle+")@("+rs.row+","+Id.tran[rs.col]+")");
-            }
+        RouteSet rs = (RouteSet) o;
+        if (added) {
+            logger.debug("RT: added(" + handle + ")@(" + rs.row + "," + Id.tran[rs.col] + ")");
+        } else {
+            logger.debug("RT: removed(" + handle + ")@(" + rs.row + "," + Id.tran[rs.col] + ")");
+        }
 
 
         // pass the event to the Observers of this RoutingTable
@@ -577,7 +566,6 @@ public class RoutingTable extends Observable implements NodeSetEventSource {
     /**
      * produces a String representation of the routing table, showing the number
      * of node handles in each entry
-     *
      */
 
     public String toString() {
@@ -597,7 +585,7 @@ public class RoutingTable extends Observable implements NodeSetEventSource {
     }
 
     public String printSelf() {
-        String s = "routing table for "+this.myNodeId+"\n";
+        String s = "routing table for " + this.myNodeId + "\n";
 
         // don't print the bottom rows, they are uninteresting
 
@@ -622,21 +610,20 @@ public class RoutingTable extends Observable implements NodeSetEventSource {
                     nh = rs.get(0);
                 }
                 if (nh != null) {
-                    s += ("" + ((org.urajio.freshpastry.rice.pastry.Id)(nh.getId())).toStringBare());
+                    s += ("" + ((org.urajio.freshpastry.rice.pastry.Id) (nh.getId())).toStringBare());
                     if (nh.equals(myNodeHandle)) {
                         s += "*";
                     }
                 } else {
                     s += ("" + 0);
                 }
-                s+="\t";
+                s += "\t";
             }
             s += ("\n");
         }
 
         return s;
     }
-
 
     public int numEntries() {
         int count = 0;
@@ -646,7 +633,7 @@ public class RoutingTable extends Observable implements NodeSetEventSource {
             for (int c = 0; c < maxc; c++) {
                 RouteSet rs = routingTable[r][c];
                 if (rs != null) {
-                    count+=rs.size();
+                    count += rs.size();
                 }
             }
         }
@@ -670,10 +657,9 @@ public class RoutingTable extends Observable implements NodeSetEventSource {
         return set.size();
     }
 
-    final ArrayList<NodeSetListener> listeners = new ArrayList<>();
-
     /**
      * Generates too many objects to use this interface
+     *
      * @deprecated use addNodeSetListener
      */
     public void addObserver(Observer o) {
@@ -683,6 +669,7 @@ public class RoutingTable extends Observable implements NodeSetEventSource {
 
     /**
      * Generates too many objects to use this interface
+     *
      * @deprecated use deleteNodeSetListener
      */
     public void deleteObserver(Observer o) {
@@ -703,7 +690,6 @@ public class RoutingTable extends Observable implements NodeSetEventSource {
     }
 
     /**
-     *
      * Does not return self
      *
      * @return list of NodeHandle

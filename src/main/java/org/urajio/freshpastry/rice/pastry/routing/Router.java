@@ -7,26 +7,26 @@ import java.util.Iterator;
 
 /**
  * Router is no longer just an application.  It is privileged.
- * 
- * @author Jeff Hoye
  *
+ * @author Jeff Hoye
  */
 public interface Router {
 
-  /**
-   * Send the RouteMessage based on the Pastry Algorithm
-   * @param rm
-   */
-  void route(RouteMessage rm);
+    /**
+     * Send the RouteMessage based on the Pastry Algorithm
+     *
+     * @param rm
+     */
+    void route(RouteMessage rm);
 
-  /**
-   * Returns an ordered list of the best candidates for the next to the key.  Always starts with
-   * a node that matches an additional prefix, if it is available.
-   * 
-   * @param key
-   * @return
-   */
-  Iterator<NodeHandle> getBestRoutingCandidates(Id key);
+    /**
+     * Returns an ordered list of the best candidates for the next to the key.  Always starts with
+     * a node that matches an additional prefix, if it is available.
+     *
+     * @param key
+     * @return
+     */
+    Iterator<NodeHandle> getBestRoutingCandidates(Id key);
 
 //  boolean routeMessage(RouteMessage rm);
 

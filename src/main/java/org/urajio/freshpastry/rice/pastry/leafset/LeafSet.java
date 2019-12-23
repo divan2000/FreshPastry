@@ -12,27 +12,23 @@ import java.util.*;
 
 /**
  * A class for representing and manipulating the leaf set.
- *
+ * <p>
  * The leafset is not strictly a set: when the ring is small, a node may appear in both the cw and the ccw half of the "set".
- *
- * @version $Id$
  *
  * @author Andrew Ladd
  * @author Peter Druschel
+ * @version $Id$
  */
 public class LeafSet extends Observable implements Serializable, Iterable<NodeHandle> {
     static private final long serialVersionUID = 3960030608598552977L;
-
+    transient boolean observe = true;
+    // can get backup entries from this when we remove
+    transient RoutingTable routingTable;
     private Id baseId;
     private NodeHandle baseHandle;
     private SimilarSet cwSet;
     private SimilarSet ccwSet;
-
-    transient boolean observe = true;
     private int theSize;
-
-    // can get backup entries from this when we remove
-    transient RoutingTable routingTable;
 
     private LeafSet(LeafSet that) {
         this(that, true);
@@ -51,8 +47,8 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
      * Constructor.
      *
      * @param localHandle the local node
-     * @param size the size of the leaf set.
-     * @param rt (to fall back on for more entries on delete operations)
+     * @param size        the size of the leaf set.
+     * @param rt          (to fall back on for more entries on delete operations)
      */
     public LeafSet(NodeHandle localNode, int size, RoutingTable rt) {
         this(localNode, size, true);
@@ -66,8 +62,76 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
         baseId = localNode.getNodeId();
         theSize = size;
 
-        cwSet = new SimilarSet(this, localNode, size/2, true);
-        ccwSet = new SimilarSet(this, localNode, size/2, false);
+        cwSet = new SimilarSet(this, localNode, size / 2, true);
+        ccwSet = new SimilarSet(this, localNode, size / 2, false);
+    }
+
+    public LeafSet(NodeHandle localNode, int size, boolean observe, NodeHandle[] cwTable, NodeHandle[] ccwTable) {
+        this.observe = observe;
+
+        baseHandle = localNode;
+        baseId = localNode.getNodeId();
+        theSize = size;
+
+        cwSet = new SimilarSet(this, localNode, size / 2, true, cwTable);
+        ccwSet = new SimilarSet(this, localNode, size / 2, false, ccwTable);
+    }
+
+    /**
+     * So that small LeafSets (who have overlapping nodes) don't waste bandwidth,
+     * leafset first defines the NodeHandles to be loaded into an array, then
+     * specifies their locations. We do this because
+     * a NodeHandle takes up a lot more space than the index in the leafset, and
+     * it may be in the leafset 1 or 2 times.
+     * <p>
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     * + byte theSize  +numUniqueHandls+ byte cwSize   + byte ccwSize  +
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     * + NodeHandle baseHandle                                         +
+     * ...
+     * +                                                               +
+     * +                                                               +
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     * + NodeHandle 1st                                                +
+     * ...
+     * +                                                               +
+     * +                                                               +
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     * ...
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     * + NodeHandle numUniqueHandls-th                                 +
+     * ...
+     * +                                                               +
+     * +                                                               +
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     * + byte cw 1st   +  cw  2nd      + ...           + ccw 1st       +
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     * + ccw 2nd       +  ...          + ...           + ccw Nth       +
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     */
+    public static LeafSet build(InputBuffer buf, NodeHandleFactory nhf) throws IOException {
+        byte theSize = buf.readByte();
+        byte numUniqueHandles = buf.readByte();
+        byte cwSize = buf.readByte();
+        byte ccwSize = buf.readByte();
+        NodeHandle baseHandle = nhf.readNodeHandle(buf);
+        NodeHandle[] nhTable = new NodeHandle[numUniqueHandles];
+        for (int i = 0; i < numUniqueHandles; i++) {
+            nhTable[i] = nhf.readNodeHandle(buf);
+        }
+
+        NodeHandle[] cwTable = new NodeHandle[cwSize];
+        NodeHandle[] ccwTable = new NodeHandle[ccwSize];
+
+        for (int i = 0; i < cwSize; i++) {
+            cwTable[i] = nhTable[buf.readByte()];
+        }
+
+        for (int i = 0; i < ccwSize; i++) {
+            ccwTable[i] = nhTable[buf.readByte()];
+        }
+
+        return new LeafSet(baseHandle, theSize, true, cwTable, ccwTable);
     }
 
     /**
@@ -91,8 +155,7 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
         return put(handle, false);
     }
 
-    public boolean put(NodeHandle handle, boolean suppressNotification)
-    {
+    public boolean put(NodeHandle handle, boolean suppressNotification) {
         Id nid = handle.getNodeId();
         if (nid.equals(baseId)) return false;
         if (member(handle)) return false;
@@ -106,8 +169,7 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
      * @param handle the handle to test.
      * @return true if a put would succeed, false otherwise.
      */
-    public boolean test(NodeHandle handle)
-    {
+    public boolean test(NodeHandle handle) {
         Id nid = handle.getNodeId();
         if (nid.equals(baseId)) return false;
         if (member(handle)) return false;
@@ -121,8 +183,8 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
      * @return true if the most distant cw member appears in the ccw set or vice versa, false otherwise
      */
     public boolean overlaps() {
-        if (size() > 0 && ( ccwSet.member(cwSet.get(cwSet.size()-1)) ||
-                cwSet.member(ccwSet.get(ccwSet.size()-1)) ) )
+        if (size() > 0 && (ccwSet.member(cwSet.get(cwSet.size() - 1)) ||
+                cwSet.member(ccwSet.get(ccwSet.size() - 1))))
             return true;
 
         else return false;
@@ -135,7 +197,7 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
 
     /**
      * There are 2 possible indexes (if the ring is small), the cw index and the ccw, this returns the nearest index, and if they are the same, the cw index.
-     *
+     * <p>
      * Note: previous to FP2.1a3, this always returned the cw index if it existed.
      *
      * @param nh
@@ -167,20 +229,17 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
         throw new NoSuchElementException();
     }
 
-
     /**
      * Finds the NodeHandle at a given index.
      *
      * @param index an index.
      * @return the handle associated with that index.
      */
-    public NodeHandle get(int index)
-    {
+    public NodeHandle get(int index) {
         if (index == 0) return baseHandle;
         if (index >= 0) return cwSet.get(index - 1);
-        else return ccwSet.get(- index - 1);
+        else return ccwSet.get(-index - 1);
     }
-
 
     /**
      * Verifies if the set contains this particular handle.
@@ -202,11 +261,9 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
      * @param nid a node id.
      * @return true if that node id is in the set, false otherwise.
      */
-    public boolean member(Id nid)
-    {
+    public boolean member(Id nid) {
         return cwSet.member(nid) || ccwSet.member(nid);
     }
-
 
     /**
      * Removes a node id and its handle from the set.
@@ -214,8 +271,7 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
      * @param nid the node to remove.
      * @return the node handle removed or null if nothing.
      */
-    public void remove(NodeHandle nh)
-    {
+    public void remove(NodeHandle nh) {
         cwSet.remove(nh);
         ccwSet.remove(nh);
 
@@ -230,7 +286,9 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
      *
      * @return the size.
      */
-    public int maxSize() { return theSize; }
+    public int maxSize() {
+        return theSize;
+    }
 
     /**
      * Gets the current size of the leaf set.  Note that if the leafset overlaps,
@@ -253,14 +311,18 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
      *
      * @return the size.
      */
-    public int cwSize() { return cwSet.size(); }
+    public int cwSize() {
+        return cwSet.size();
+    }
 
     /**
      * Gets the current counterclockwise size.
      *
      * @return the size.
      */
-    public int ccwSize() { return ccwSet.size(); }
+    public int ccwSize() {
+        return ccwSet.size();
+    }
 
     /**
      * complement - given an index of a node in the leafset, produces
@@ -268,7 +330,7 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
      * leafset
      *
      * @param index the index of the entry to complement
-     * @param the index of the same node in the opposite half of the leafset, or inx if it does not exist there
+     * @param the   index of the same node in the opposite half of the leafset, or inx if it does not exist there
      */
     private int complement(int inx) {
         int res;
@@ -277,8 +339,7 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
         if (inx < 0) {
             if (inx < -ccwSize()) return inx;
             res = cwSet.getIndex(ccwSet.get(-inx - 1)) + 1;
-        }
-        else {
+        } else {
             if (inx > cwSize()) return inx;
             res = -ccwSet.getIndex(cwSet.get(inx - 1)) - 1;
         }
@@ -303,14 +364,13 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
         if (baseId.clockwise(nid)) {
             cwMS = cwSet.mostSimilar(nid);
             //ccwMS = ccwSet.size()-1;
-            if (cwMS < cwSet.size()-1)
+            if (cwMS < cwSet.size() - 1)
                 return cwMS + 1;
             ccwMS = ccwSet.mostSimilar(nid);
-        }
-        else {
+        } else {
             ccwMS = ccwSet.mostSimilar(nid);
             //cwMS = cwSet.size()-1;
-            if (ccwMS < ccwSet.size()-1)
+            if (ccwMS < ccwSet.size() - 1)
                 return -ccwMS - 1;
             cwMS = cwSet.mostSimilar(nid);
         }
@@ -319,7 +379,7 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
         ccwMinDist = ccwSet.get(ccwMS).getNodeId().distance(nid);
 
         int cmp = cwMinDist.compareTo(ccwMinDist);
-        if (cmp < 0 || (cmp == 0 && nid.clockwise(cwSet.get(cwMS).getNodeId())) )
+        if (cmp < 0 || (cmp == 0 && nid.clockwise(cwSet.get(cwMS).getNodeId())))
             return cwMS + 1;
         else
             return -ccwMS - 1;
@@ -346,22 +406,21 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
         int ccwSize = ccwSize();
         NodeHandle cwExtreme = get(cwSize);
         NodeHandle ccwExtreme = get(-ccwSize);
-        set = replicaSet(baseId,max);
-        if(!set.member(cwExtreme) && !set.member(ccwExtreme)) {
+        set = replicaSet(baseId, max);
+        if (!set.member(cwExtreme) && !set.member(ccwExtreme)) {
             // the value of max did not cause us to reach either end of the leafset
             // in the method replicaSet
             return set;
-        }
-        else {
-            if(!set.member(cwExtreme)) {
+        } else {
+            if (!set.member(cwExtreme)) {
                 // All the nodes in the ccwSet are already members
-                for(int i=1; i <= cwSize; i++) {
+                for (int i = 1; i <= cwSize; i++) {
                     set.put(get(i));
                 }
             }
-            if(!set.member(ccwExtreme)) {
+            if (!set.member(ccwExtreme)) {
                 // All the nodes in the cwSet are already members
-                for(int i=1; i <= ccwSize; i++) {
+                for (int i = 1; i <= ccwSize; i++) {
                     set.put(get(-i));
                 }
             }
@@ -380,9 +439,9 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
         NodeSet set = new NodeSet();
         if (max < 1) return set;
 
-        if ( !overlaps() && size() > 0 &&
+        if (!overlaps() && size() > 0 &&
                 !key.isBetween(get(-ccwSet.size()).getNodeId(), get(cwSet.size()).getNodeId()) &&
-                !key.equals(get(cwSet.size()).getNodeId()) )
+                !key.equals(get(cwSet.size()).getNodeId()))
             // can't determine root of key, return empty set
             return set;
 
@@ -440,7 +499,7 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
      * @return the number of unique nodes in the leafset
      */
     public int getUniqueCount() {
-        return getUniqueSet().size()+1; // the local node
+        return getUniqueSet().size() + 1; // the local node
 //
 //    Vector v = new Vector();
 //
@@ -455,7 +514,7 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
 
     /**
      * Unordered iterator, does not contain local node.  Contains each element only once.
-     *
+     * <p>
      * TODO: Make this in order from nearest neighbor to farthest neighbor, not by replica, but take cw[0], cc2[0], cw[1], ccw[1] etc...
      *
      * @return
@@ -466,6 +525,7 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
 
     /**
      * Set of nodes in the leafset, not the local node, each node only once.
+     *
      * @return
      */
     public Collection<NodeHandle> getUniqueSet() {
@@ -474,8 +534,6 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
         superset.addAll(ccwSet.getCollection());
         return superset;
     }
-
-
 
     /**
      * Perform (x mod y).  This is necessary because the java % operator
@@ -502,8 +560,9 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
      */
     public IdRange range(NodeHandle n, int r) {
         // first, we check the arguments
-        if (r < 0) throw new IllegalArgumentException("Range must be greater than or equal to zero. Attempted "+r);
-        if (! (member(n) || baseHandle.equals(n))) throw new LSRangeCannotBeDeterminedException("Node "+n+" is not in this leafset.",r,Integer.MIN_VALUE, getUniqueCount(), n, this);
+        if (r < 0) throw new IllegalArgumentException("Range must be greater than or equal to zero. Attempted " + r);
+        if (!(member(n) || baseHandle.equals(n)))
+            throw new LSRangeCannotBeDeterminedException("Node " + n + " is not in this leafset.", r, Integer.MIN_VALUE, getUniqueCount(), n, this);
 
         // get the position of the node and the number of nodes in the network
         int pos = getIndex(n);
@@ -517,7 +576,7 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
 
             // if the rank is more than the number of nodes in the network, then we return
             // the whole range.
-            if (r+1 >= num) {
+            if (r + 1 >= num) {
                 return new IdRange(n.getNodeId(), n.getNodeId());
             }
 
@@ -541,7 +600,7 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
 
         // if either of it's pair nodes are null, then we cannot determine the range
         if ((ccw == null) || (cw == null)) {
-            throw new LSRangeCannotBeDeterminedException("This leafset doesn't have enough information to provide the correct range.",r,pos, getUniqueCount(), n, this);
+            throw new LSRangeCannotBeDeterminedException("This leafset doesn't have enough information to provide the correct range.", r, pos, getUniqueCount(), n, this);
         }
 
         // otherwise, we then construct the ranges which comprise the main range, and finally
@@ -559,7 +618,7 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
      * i-roots for the key fail, O<=i<r, where a key's 0-root is the numerically closest node to the key.
      * there can be two contiguous ranges of keys; the cw parameter selects which one is returned.
      *
-     * @param n the nodehandle
+     * @param n  the nodehandle
      * @param r
      * @param cw if true returns the clockwise range, else the counterclockwise range
      * @return the range of keys, or null if n is not a member of the leafset, or if the range cannot be computed
@@ -569,7 +628,7 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
         if (r == 0) return rr;
         IdRange rprev = null;
         try {
-            rprev = range(n, r-1);
+            rprev = range(n, r - 1);
         } catch (LSRangeCannotBeDeterminedException rcbde) {
             // keeps previous functionality now that we are throwing rcbde rather than returning null
         }
@@ -579,19 +638,18 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
         IdRange res;
 
         if (!cw) res = rr.diff(rprev);
-        else     res = rprev.diff(rr);
+        else res = rprev.diff(rr);
         return res;
     }
-
 
     /**
      * Merge a remote leafset into this
      *
-     * @param remotels the remote leafset
-     * @param from the node from which we received the leafset
-     * @param routeTable the routing table
-     * @param security the security manager
-     * @param testOnly if true, do not change the leafset
+     * @param remotels        the remote leafset
+     * @param from            the node from which we received the leafset
+     * @param routeTable      the routing table
+     * @param security        the security manager
+     * @param testOnly        if true, do not change the leafset
      * @param insertedHandles if not null, a Set that contains, upon return of this method, the nodeHandles that would be inserted into this LeafSet if testOnly is true
      * @return true if the local leafset changed
      */
@@ -621,8 +679,7 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
 
                 if (remotels.size() < 2) {
                     cw = ccw = 0;
-                }
-                else {
+                } else {
 
                     // find the num. closest to localId in the remotels
                     int closest = remotels.mostSimilar(baseId);
@@ -638,52 +695,44 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
                         if (baseId.clockwise(closestId)) {
                             cw = closest;
                             ccw = remotels.complement(closest - 1);
-                        }
-                        else {
+                        } else {
                             cw = remotels.complement(closest + 1);
                             ccw = closest;
                         }
-                    }
-                    else if (closest < 0) {
+                    } else if (closest < 0) {
                         // from is cw
                         if (baseId.clockwise(closestId)) {
                             cw = closest;
                             ccw = remotels.complement(closest - 1);
-                        }
-                        else {
+                        } else {
                             cw = closest + 1;
                             ccw = remotels.complement(closest);
                         }
-                    }
-                    else {
+                    } else {
                         // from is ccw
                         if (baseId.clockwise(closestId)) {
                             cw = remotels.complement(closest);
                             ccw = closest - 1;
-                        }
-                        else {
+                        } else {
                             ccw = closest;
                             cw = remotels.complement(closest + 1);
                         }
                     }
 
                 }
-            }
-            else {
+            } else {
                 // localId in ccw set
 
-                ccw = -ccw  - 2;
+                ccw = -ccw - 2;
                 cw = ccw + 2;
             }
-        }
-        else {
+        } else {
             // localId in cw set
 
             if (ccw < 0) {
                 cw = cw + 2;
                 ccw = cw - 2;
-            }
-            else {
+            } else {
                 // localId is in both halves
                 int tmp = ccw;
                 ccw = cw;
@@ -691,7 +740,7 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
             }
         }
 
-        for (int i=cw; i<=cwSize; i++) {
+        for (int i = cw; i <= cwSize; i++) {
             NodeHandle nh;
 
             if (i == 0) nh = from;
@@ -703,8 +752,7 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
             if (testOnly) {
                 // see it is missing
                 changed = cwSet.test(nh);
-            }
-            else {
+            } else {
                 // merge into our cw leaf set half
                 changed = cwSet.put(nh, true);
 
@@ -718,7 +766,7 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
             if (insertedHandles != null && changed) insertedHandles.add(nh);
         }
 
-        for (int i=ccw; i>= -ccwSize; i--) {
+        for (int i = ccw; i >= -ccwSize; i--) {
             NodeHandle nh;
 
             if (i == 0) nh = from;
@@ -730,8 +778,7 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
             if (testOnly) {
                 // see if it is missing
                 changed = ccwSet.test(nh);
-            }
-            else {
+            } else {
                 // merge into our leaf set
                 changed = ccwSet.put(nh, true);
 
@@ -747,7 +794,7 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
 
         // if there is overlap, insert nearest nodes regardless of orientation
         if (overlaps()) {
-            for (int i=-ccwSize; i <= cwSize; i++) {
+            for (int i = -ccwSize; i <= cwSize; i++) {
                 NodeHandle nh;
 
                 if (i == 0) nh = from;
@@ -758,8 +805,7 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
                 if (testOnly) {
                     // merge into our leaf set
                     changed = test(nh);
-                }
-                else {
+                } else {
                     // merge into our leaf set
                     changed = put(nh);
 
@@ -780,11 +826,12 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
 
         return result;
     }
+
     /**
      * Add observer method.
      *
-     * @deprecated use addNodeSetListener
      * @param o the observer to add.
+     * @deprecated use addNodeSetListener
      */
     public void addObserver(Observer o) {
         cwSet.addObserver(o);
@@ -794,8 +841,8 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
     /**
      * Delete observer method.
      *
-     * @deprecated use deleteNodeSetListener
      * @param o the observer to delete.
+     * @deprecated use deleteNodeSetListener
      */
     public void deleteObserver(Observer o) {
         cwSet.deleteObserver(o);
@@ -824,22 +871,20 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
 
     /**
      * Returns a string representation of the leaf set
-     *
      */
-    public String toString()
-    {
+    public String toString() {
         String s = "leafset: ";
-        for (int i=-ccwSet.size(); i<0; i++)
+        for (int i = -ccwSet.size(); i < 0; i++)
             s = s + get(i).getNodeId();
         s = s + " [ " + baseId + " ] ";
-        for (int i=1; i<=cwSet.size(); i++)
+        for (int i = 1; i <= cwSet.size(); i++)
             s = s + get(i).getNodeId();
 
-        s+=" complete:"+isComplete();
-        s+=" size:"+size();
+        s += " complete:" + isComplete();
+        s += " size:" + size();
         if (size() > 0)
-            s+=" s1:"+ ccwSet.member(cwSet.get(cwSet.size()-1));
-        s+=" s2:"+ cwSet.member(ccwSet.get(ccwSet.size()-1));
+            s += " s1:" + ccwSet.member(cwSet.get(cwSet.size() - 1));
+        s += " s2:" + cwSet.member(ccwSet.get(ccwSet.size() - 1));
 
         return s;
     }
@@ -872,106 +917,36 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
      * specifies their locations. We do this because
      * a NodeHandle takes up a lot more space than the index in the leafset, and
      * it may be in the leafset 1 or 2 times.
-     *
-     *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     *   + byte theSize  +numUniqueHandls+ byte cwSize   + byte ccwSize  +
-     *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     *   + NodeHandle baseHandle                                         +
-     *                    ...
-     *   +                                                               +
-     *   +                                                               +
-     *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     *   + NodeHandle 1st                                                +
-     *                    ...
-     *   +                                                               +
-     *   +                                                               +
-     *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     *                    ...
-     *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     *   + NodeHandle numUniqueHandls-th                                 +
-     *                    ...
-     *   +                                                               +
-     *   +                                                               +
-     *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     *   + byte cw 1st   +  cw  2nd      + ...           + ccw 1st       +
-     *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     *   + ccw 2nd       +  ...          + ...           + ccw Nth       +
-     *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     *
-     */
-    public static LeafSet build(InputBuffer buf, NodeHandleFactory nhf) throws IOException {
-        byte theSize = buf.readByte();
-        byte numUniqueHandles = buf.readByte();
-        byte cwSize = buf.readByte();
-        byte ccwSize = buf.readByte();
-        NodeHandle baseHandle = nhf.readNodeHandle(buf);
-        NodeHandle[] nhTable = new NodeHandle[numUniqueHandles];
-        for (int i = 0; i < numUniqueHandles; i++) {
-            nhTable[i] = nhf.readNodeHandle(buf);
-        }
-
-        NodeHandle[] cwTable = new NodeHandle[cwSize];
-        NodeHandle[] ccwTable = new NodeHandle[ccwSize];
-
-        for (int i = 0; i < cwSize; i++) {
-            cwTable[i] = nhTable[buf.readByte()];
-        }
-
-        for (int i = 0; i < ccwSize; i++) {
-            ccwTable[i] = nhTable[buf.readByte()];
-        }
-
-        return new LeafSet(baseHandle,theSize, true, cwTable, ccwTable);
-    }
-
-    public LeafSet(NodeHandle localNode, int size, boolean observe, NodeHandle[] cwTable, NodeHandle[] ccwTable) {
-        this.observe = observe;
-
-        baseHandle = localNode;
-        baseId = localNode.getNodeId();
-        theSize = size;
-
-        cwSet = new SimilarSet(this, localNode, size/2, true, cwTable);
-        ccwSet = new SimilarSet(this, localNode, size/2, false, ccwTable);
-    }
-
-    /**
-     * So that small LeafSets (who have overlapping nodes) don't waste bandwidth,
-     * leafset first defines the NodeHandles to be loaded into an array, then
-     * specifies their locations. We do this because
-     * a NodeHandle takes up a lot more space than the index in the leafset, and
-     * it may be in the leafset 1 or 2 times.
-     *
-     *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     *   + byte theSize  +numUniqueHandls+ byte cwSize   + byte ccwSize  +
-     *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     *   + NodeHandle baseHandle                                         +
-     *                    ...
-     *   +                                                               +
-     *   +                                                               +
-     *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     *   + NodeHandle 1st                                                +
-     *                    ...
-     *   +                                                               +
-     *   +                                                               +
-     *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     *                    ...
-     *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     *   + NodeHandle numUniqueHandls-th                                 +
-     *                    ...
-     *   +                                                               +
-     *   +                                                               +
-     *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     *   + byte cw 1st   +  cw  2nd      + ...           + ccw 1st       +
-     *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     *   + ccw 2nd       +  ...          + ...           + ccw Nth       +
-     *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     *
-     *   TODO 2.23.2006 the synchronization of LeafSet is nonexistent
-     *   and it's difficult to add because the listeneer interface should not
-     *   be called while holding a lock, but the lock should be acquired once while
-     *   making the change
-     *
+     * <p>
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     * + byte theSize  +numUniqueHandls+ byte cwSize   + byte ccwSize  +
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     * + NodeHandle baseHandle                                         +
+     * ...
+     * +                                                               +
+     * +                                                               +
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     * + NodeHandle 1st                                                +
+     * ...
+     * +                                                               +
+     * +                                                               +
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     * ...
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     * + NodeHandle numUniqueHandls-th                                 +
+     * ...
+     * +                                                               +
+     * +                                                               +
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     * + byte cw 1st   +  cw  2nd      + ...           + ccw 1st       +
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     * + ccw 2nd       +  ...          + ...           + ccw Nth       +
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     * <p>
+     * TODO 2.23.2006 the synchronization of LeafSet is nonexistent
+     * and it's difficult to add because the listeneer interface should not
+     * be called while holding a lock, but the lock should be acquired once while
+     * making the change
      */
     public synchronized void serialize(OutputBuffer buf) throws IOException {
         HashSet<NodeHandle> superset = new HashSet<>();
@@ -979,10 +954,10 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
         superset.addAll(ccwSet.getCollection());
         ArrayList<NodeHandle> list = new ArrayList<>(superset);
 
-        buf.writeByte((byte)theSize);
-        buf.writeByte((byte)list.size());
-        buf.writeByte((byte)cwSize());
-        buf.writeByte((byte)ccwSize());
+        buf.writeByte((byte) theSize);
+        buf.writeByte((byte) list.size());
+        buf.writeByte((byte) cwSize());
+        buf.writeByte((byte) ccwSize());
 
         baseHandle.serialize(buf);
 
@@ -991,23 +966,22 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
         }
 
         for (int i = 0; i < cwSet.size(); i++) {
-            buf.writeByte((byte)list.indexOf(cwSet.get(i)));
+            buf.writeByte((byte) list.indexOf(cwSet.get(i)));
         }
 
         for (int i = 0; i < ccwSet.size(); i++) {
-            buf.writeByte((byte)list.indexOf(ccwSet.get(i)));
+            buf.writeByte((byte) list.indexOf(ccwSet.get(i)));
         }
     }
 
     /**
-     *
      * If overlaps() a NodeHandle may show up twice.  Does not return self.
      *
      * @return list of NodeHandle
      */
     public synchronized List<NodeHandle> asList() {
         List<NodeHandle> l = new ArrayList<>();
-        for (int i=-ccwSize(); i<=cwSize(); i++) {
+        for (int i = -ccwSize(); i <= cwSize(); i++) {
             if (i != 0) {
                 l.add(get(i));
             }

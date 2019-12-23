@@ -8,9 +8,9 @@ package org.urajio.freshpastry.rice.p2p.commonapi;
  * @author Jeff Hoye
  */
 public interface CancellableTask extends Cancellable {
-  
-  void run();
-  
-  long scheduledExecutionTime();
-  
+
+    void run();
+
+    long scheduledExecutionTime();
+
 }

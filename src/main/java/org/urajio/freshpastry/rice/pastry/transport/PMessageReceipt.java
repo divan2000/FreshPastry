@@ -7,9 +7,9 @@ import org.urajio.freshpastry.rice.pastry.messaging.Message;
 import java.util.Map;
 
 public interface PMessageReceipt extends MessageRequestHandle<NodeHandle, Message> {
-  NodeHandle getIdentifier();
+    NodeHandle getIdentifier();
 
-  Message getMessage();
+    Message getMessage();
 
-  Map<String, Object> getOptions();
+    Map<String, Object> getOptions();
 }

@@ -4,24 +4,24 @@ import java.io.IOException;
 
 /**
  * Wrapper exception to hold the name of the message that caused the serialization problem.
- * 
+ *
  * @author Jeff Hoye
  */
 public class JavaSerializationException extends IOException {
-  
-  Object cantSerialize;
 
-  public JavaSerializationException(Object o, Exception e) {
-    super("Error serializing "+o);
-    initCause(e);
-    this.cantSerialize = o;
-  }
-  
-  /**
-   * @return the object that caused the serialization problem
-   */
-  public Object getUnserializable() {
-    return cantSerialize;
-  }
+    Object cantSerialize;
+
+    public JavaSerializationException(Object o, Exception e) {
+        super("Error serializing " + o);
+        initCause(e);
+        this.cantSerialize = o;
+    }
+
+    /**
+     * @return the object that caused the serialization problem
+     */
+    public Object getUnserializable() {
+        return cantSerialize;
+    }
 }
 

@@ -4,8 +4,11 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 
 public interface MessageInfo {
-  ByteBuffer getMessage();
-  Map<String, Object> getOptions();
-  int getPriroity();
-  int getSize();
+    ByteBuffer getMessage();
+
+    Map<String, Object> getOptions();
+
+    int getPriroity();
+
+    int getSize();
 }

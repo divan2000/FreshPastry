@@ -3,13 +3,11 @@ package org.urajio.freshpastry.rice.pastry;
 /**
  * A class which stores changes to a node set.
  *
- * @version $Id$
- *
  * @author Andrew Ladd
+ * @version $Id$
  */
 
-public class NodeSetUpdate 
-{
+public class NodeSetUpdate {
     private NodeHandle changed;
     private boolean added;
 
@@ -17,12 +15,12 @@ public class NodeSetUpdate
      * Constructor.
      *
      * @param which the handle that changed.
-     * @param how true if it was added to the set, false otherwise.
+     * @param how   true if it was added to the set, false otherwise.
      */
 
     public NodeSetUpdate(NodeHandle which, boolean how) {
-  changed = which;
-  added = how;
+        changed = which;
+        added = how;
     }
 
     /**
@@ -31,7 +29,9 @@ public class NodeSetUpdate
      * @return the node handle that changed.
      */
 
-    public NodeHandle handle() { return changed; }
+    public NodeHandle handle() {
+        return changed;
+    }
 
     /**
      * Returns true if the handle was added to the set.
@@ -39,5 +39,7 @@ public class NodeSetUpdate
      * @return true if added, false otherwise.
      */
 
-    public boolean wasAdded() { return added; }
+    public boolean wasAdded() {
+        return added;
+    }
 }
