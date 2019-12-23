@@ -170,12 +170,12 @@ public abstract class NodeHandle extends org.urajio.freshpastry.rice.p2p.commona
     }
 
     public int compareTo(ObsPri o) {
-      int ret = ((ObsPri)o).pri - pri;
+      int ret = o.pri - pri;
       if (ret == 0) {
-        if (((ObsPri)o).equals(o)) {
+        if (o.equals(o)) {
           return 0;
         } else {
-          return System.identityHashCode((ObsPri)o)-System.identityHashCode(this);
+          return System.identityHashCode(o)-System.identityHashCode(this);
         }
       }
 //      System.out.println(this+".compareTo("+that+"):"+ret);

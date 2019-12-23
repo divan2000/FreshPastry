@@ -43,7 +43,7 @@ public class SimpleRandomSource implements RandomSource {
       try {
         byte[] foo = InetAddress.getLocalHost().getAddress();
         for (int ctr = 0; ctr < foo.length; ctr++) {
-          int i = (int)foo[ctr];
+          int i = foo[ctr];
           i <<= (ctr*8);
           time ^= i; 
         }

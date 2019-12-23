@@ -76,7 +76,7 @@ public class MessageDispatch implements Destructable {
   }
 
   public PastryAppl getDestinationByAddress(int addr) {
-    return (PastryAppl) addressBook.get(addr);
+    return addressBook.get(addr);
   }
 
   /**

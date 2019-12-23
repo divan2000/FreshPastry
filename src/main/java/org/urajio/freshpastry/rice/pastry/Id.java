@@ -538,7 +538,7 @@ public class Id implements org.urajio.freshpastry.rice.p2p.commonapi.Id, RawSeri
    * @return The length of the byte[] representing this Id
    */
   public int getByteArrayLength() {
-    return (int) IdBitLength / 8;
+    return IdBitLength / 8;
   }
   
   /**

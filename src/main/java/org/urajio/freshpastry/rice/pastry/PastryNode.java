@@ -1070,7 +1070,7 @@ public class PastryNode extends Observable implements
       }
     }
     
-    notifyLivenessListeners((NodeHandle)i, val, options);
+    notifyLivenessListeners(i, val, options);
   }
   
   final Collection<LivenessListener<NodeHandle>> livenessListeners = new ArrayList<>();

@@ -93,7 +93,7 @@ public class NodeSet implements NodeSetI, Serializable {
 
   public NodeHandle get(Id nid) {
     try {
-      return (NodeHandle) set.elementAt(getIndex(nid));
+      return set.elementAt(getIndex(nid));
     } catch (Exception e) {
       return null;
     }
@@ -111,7 +111,7 @@ public class NodeSet implements NodeSetI, Serializable {
     NodeHandle h;
 
     try {
-      h = (NodeHandle) set.elementAt(i);
+      h = set.elementAt(i);
     } catch (Exception e) {
       return null;
     }
@@ -143,7 +143,7 @@ public class NodeSet implements NodeSetI, Serializable {
 
   public NodeHandle remove(Id nid) {
     try {
-      return (NodeHandle) set.remove(getIndex(nid));
+      return set.remove(getIndex(nid));
     } catch (Exception e) {
       return null;
     }
@@ -175,7 +175,7 @@ public class NodeSet implements NodeSetI, Serializable {
 
     for (int i = 0; i < set.size(); i++) {
       try {
-        h = (NodeHandle) set.elementAt(i);
+        h = set.elementAt(i);
         if (h.equals(nh))
           return i;
       } catch (Exception e) {
@@ -190,7 +190,7 @@ public class NodeSet implements NodeSetI, Serializable {
 
     for (int i = 0; i < set.size(); i++) {
       try {
-        h = (NodeHandle) set.elementAt(i);
+        h = set.elementAt(i);
         if (h.getNodeId().equals(nid))
           return i;
       } catch (Exception e) {

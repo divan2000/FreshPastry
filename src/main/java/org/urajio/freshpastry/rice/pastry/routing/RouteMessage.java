@@ -143,7 +143,7 @@ public class RouteMessage extends PRawMessage implements Serializable,
   public RouteMessage(Id target, Message msg, NodeHandle firstHop, SendOptions opts, byte serializeVersion) {
     super(RouterAddress.getCode());
     this.version = serializeVersion;
-    this.target = (Id) target;
+    this.target = target;
     internalMsg = msg;
     nextHop = firstHop;
     this.opts = opts;

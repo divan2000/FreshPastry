@@ -251,7 +251,7 @@ public class SimpleParameters implements Parameters {
               result.add(address);
       }
 
-    return (InetSocketAddress[]) result.toArray(new InetSocketAddress[0]);
+    return result.toArray(new InetSocketAddress[0]);
   }
 
   public String getString(String name) {
@@ -363,7 +363,7 @@ public class SimpleParameters implements Parameters {
   protected class MyProperties extends Properties {
     @SuppressWarnings("unchecked")
     public Enumeration keys() {
-      final String[] keys = (String[]) keySet().toArray(new String[0]);
+      final String[] keys = keySet().toArray(new String[0]);
       Arrays.sort(keys);
 
       return new Enumeration() {

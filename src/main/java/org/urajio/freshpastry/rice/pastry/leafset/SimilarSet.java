@@ -137,14 +137,11 @@ public class SimilarSet extends Observable implements NodeSetEventSource, Serial
       return true;
 
     if (clockwise) {
-      if (!nid.isBetween(ln.getNodeId(), nodes[theSize - 1].getNodeId()))
-        return false;
+      return nid.isBetween(ln.getNodeId(), nodes[theSize - 1].getNodeId());
     } else {
-      if (!nid.isBetween(nodes[theSize - 1].getNodeId(), ln.getNodeId()))
-        return false;
+      return nid.isBetween(nodes[theSize - 1].getNodeId(), ln.getNodeId());
     }
 
-    return true;
   }
 
   /**
