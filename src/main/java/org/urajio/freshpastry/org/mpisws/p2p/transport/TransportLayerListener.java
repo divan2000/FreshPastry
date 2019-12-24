@@ -31,6 +31,4 @@ public interface TransportLayerListener<Identifier> {
      * @param socket      true if it was on a socket, false if it was a message
      */
     void read(int bytes, Identifier i, Map<String, Object> options, boolean passthrough, boolean socket);
-
-
 }

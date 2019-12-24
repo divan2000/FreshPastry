@@ -5,8 +5,7 @@ package org.urajio.freshpastry.org.mpisws.p2p.transport;
  *
  * @author Jeff Hoye
  */
-public class ClosedChannelException extends
-        java.nio.channels.ClosedChannelException {
+public class ClosedChannelException extends java.nio.channels.ClosedChannelException {
     String reason;
 
     public ClosedChannelException(String reason) {
