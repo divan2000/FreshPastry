@@ -9,18 +9,11 @@ package org.urajio.freshpastry.rice.environment.random;
  */
 public interface RandomSource {
     boolean nextBoolean();
-
     void nextBytes(byte[] bytes);
-
     double nextDouble();
-
     float nextFloat();
-
     double nextGaussian();
-
     int nextInt();
-
     int nextInt(int max);
-
     long nextLong();
 }

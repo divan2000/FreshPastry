@@ -4,60 +4,39 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.urajio.freshpastry.rice.environment.random.RandomSource;
 
-import java.net.InetAddress;
+import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.Random;
 
 /**
+ * Simple, insecure random source
+ *
  * @author Jeff Hoye
  */
 public class SimpleRandomSource implements RandomSource {
     private final static Logger logger = LoggerFactory.getLogger(SimpleRandomSource.class);
 
-    Random rnd;
-
-
-    String instance;
-
-    public SimpleRandomSource(long seed, String instance) {
-        init(seed, instance);
-    }
+    private final Random rnd;
 
     public SimpleRandomSource(long seed) {
-        this(seed, null);
+        logger.info("Custom RNG seed = " + seed);
+        rnd = new Random(seed);
     }
 
     public SimpleRandomSource() {
-        this(null);
-    }
+        byte[] bytes = new SecureRandom().generateSeed(8);
 
-    public SimpleRandomSource(String instance) {
-        // NOTE: Since we are often starting up a bunch of nodes on planetlab
-        // at the same time, we need this randomsource to be seeded by more
-        // than just the clock, we will include the IP address
-        // as amazing as this sounds, it happened in a network of 20 on 7/19/2005
-        // also, if you think about it, I was starting all of the nodes at the same
-        // instant, and they had synchronized clocks, if they all started within 1/10th of
-        // a second, then there is only 100 different numbers to seed the generator with
-        // -Jeff
-        long time = System.currentTimeMillis();
-        try {
-            byte[] foo = InetAddress.getLocalHost().getAddress();
-            for (int ctr = 0; ctr < foo.length; ctr++) {
-                int i = foo[ctr];
-                i <<= (ctr * 8);
-                time ^= i;
-            }
-        } catch (Exception e) {
-            // if there is no NIC, screw it, this is really unlikely anyway
-        }
-        init(time, instance);
-    }
+        // clever byte[] to long
+        long seed = 0;
+        seed += (long) (bytes[7] & 0x000000FF) << 56;
+        seed += (long) (bytes[6] & 0x000000FF) << 48;
+        seed += (long) (bytes[5] & 0x000000FF) << 40;
+        seed += (long) (bytes[4] & 0x000000FF) << 32;
+        seed += (bytes[3] & 0x000000FF) << 24;
+        seed += (bytes[2] & 0x000000FF) << 16;
+        seed += (bytes[1] & 0x000000FF) << 8;
+        seed += (bytes[0] & 0x000000FF);
 
-    public void setLogManager() {
-        // TODO: dsdiv remove this method
-    }
-
-    private void init(long seed, String instance) {
         logger.info("RNG seed = " + seed);
         rnd = new Random(seed);
     }
@@ -70,7 +49,7 @@ public class SimpleRandomSource implements RandomSource {
 
     public void nextBytes(byte[] bytes) {
         rnd.nextBytes(bytes);
-        logger.debug("nextBytes[" + bytes.length + "] = " + bytes);
+        logger.debug("nextBytes[" + bytes.length + "] = " + Arrays.toString(bytes));
     }
 
     public double nextDouble() {

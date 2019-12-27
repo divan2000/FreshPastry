@@ -18,7 +18,6 @@ import org.urajio.freshpastry.rice.environment.time.simulated.DirectTimeSource;
 import org.urajio.freshpastry.rice.selector.SelectorManager;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashSet;
 
 
@@ -40,7 +39,7 @@ public class Environment implements Destructable {
     private Parameters params;
     private ExceptionStrategy exceptionStrategy;
 
-    private HashSet<Destructable> destructables = new HashSet<>();
+    private HashSet<Destructable> destructables;
 
     /**
      * Constructor.  You can provide null values for all/any paramenters, which will result
@@ -59,6 +58,8 @@ public class Environment implements Destructable {
         this.processor = proc;
         this.exceptionStrategy = strategy;
 
+        this.destructables = new HashSet<>();
+
         if (params == null) {
             throw new IllegalArgumentException("params cannot be null");
         }
@@ -72,7 +73,6 @@ public class Environment implements Destructable {
 
 //    addDestructable(this.selectorManager);
 //    addDestructable(this.processor);
-
     }
 
     /**
@@ -89,18 +89,20 @@ public class Environment implements Destructable {
     }
 
     /**
-     * Convienience for defaults.  Has no parameter file to load/store.
+     * Convenience for defaults.  Has no parameter file to load/store.
      */
     public Environment() {
         this(null);
     }
 
-    public static Environment directEnvironment(int randomSeed) {
-        SimpleRandomSource srs = new SimpleRandomSource(randomSeed, null);
-        Environment env = directEnvironment(srs);
-        return env;
+    // marked as deprecated to stop using insecure seeds
+    @Deprecated
+    public static Environment directEnvironment(long randomSeed) {
+        RandomSource randomSource = new SimpleRandomSource(randomSeed);
+        return directEnvironment(randomSource);
     }
 
+    // TODO: null RandomSource? why???
     public static Environment directEnvironment() {
         return directEnvironment(null);
     }
@@ -111,8 +113,7 @@ public class Environment implements Destructable {
         SelectorManager selector = generateDefaultSelectorManager(dts, rs);
         dts.setSelectorManager(selector);
         Processor proc = new SimProcessor(selector);
-        return new Environment(selector, proc, rs, dts,
-                params, generateDefaultExceptionStrategy());
+        return new Environment(selector, proc, rs, dts, params, generateDefaultExceptionStrategy());
     }
 
     public static ExceptionStrategy generateDefaultExceptionStrategy() {
@@ -121,12 +122,11 @@ public class Environment implements Destructable {
 
     public static RandomSource generateDefaultRandomSource(Parameters params) {
         RandomSource randomSource;
-        if (params.getString("random_seed").equalsIgnoreCase("clock")) {
-            randomSource = new SimpleRandomSource();
-        } else {
+        if (params.contains("random_seed")) {
             randomSource = new SimpleRandomSource(params.getLong("random_seed"));
+        } else {
+            randomSource = new SimpleRandomSource();
         }
-
         return randomSource;
     }
 
@@ -146,10 +146,6 @@ public class Environment implements Destructable {
      * Can be easily overridden by a subclass.
      */
     protected void chooseDefaults() {
-        // choose defaults for all non-specified parameters
-//    if (params == null) {
-//      params = new SimpleParameters("temp");
-//    }
         if (time == null) {
             time = generateDefaultTimeSource();
         }
@@ -167,7 +163,6 @@ public class Environment implements Destructable {
                 processor = generateDefaultProcessor();
             }
         }
-
         if (exceptionStrategy == null) {
             exceptionStrategy = generateDefaultExceptionStrategy();
         }
@@ -197,6 +192,7 @@ public class Environment implements Destructable {
     /**
      * Tears down the environment.  Calls params.store(), selectorManager.destroy().
      */
+    @Override
     public void destroy() {
         try {
             params.store();
@@ -207,6 +203,7 @@ public class Environment implements Destructable {
             callDestroyOnDestructables();
         } else {
             getSelectorManager().invoke(new Runnable() {
+                @Override
                 public void run() {
                     callDestroyOnDestructables();
                 }
@@ -215,8 +212,9 @@ public class Environment implements Destructable {
     }
 
     private void callDestroyOnDestructables() {
-        for (Destructable d : new ArrayList<>(destructables)) {
-            d.destroy();
+        //for (Destructable d : new ArrayList<>(destructables)) {
+        for (Destructable destructable : destructables) {
+            destructable.destroy();
         }
         selectorManager.destroy();
         processor.destroy();
@@ -225,28 +223,33 @@ public class Environment implements Destructable {
     public void addDestructable(Destructable destructable) {
         if (destructable == null) {
             logger.warn("addDestructable(null)", new Exception("Stack Trace"));
-            return;
+        } else {
+            destructables.add(destructable);
         }
-        destructables.add(destructable);
-
     }
 
     public void removeDestructable(Destructable destructable) {
         if (destructable == null) {
-            logger.warn("addDestructable(null)", new Exception("Stack Trace"));
-            return;
+            logger.warn("removeDestructable(null)", new Exception("Stack Trace"));
+        } else {
+            destructables.remove(destructable);
         }
-        destructables.remove(destructable);
     }
 
     public ExceptionStrategy getExceptionStrategy() {
         return exceptionStrategy;
     }
 
+    /**
+     * Replace Exception strategy, return old strategy
+     *
+     * @param newStrategy
+     * @return old strategy
+     */
     public ExceptionStrategy setExceptionStrategy(ExceptionStrategy newStrategy) {
-        ExceptionStrategy ret = exceptionStrategy;
+        ExceptionStrategy oldStrategy = exceptionStrategy;
         exceptionStrategy = newStrategy;
-        return ret;
+        return oldStrategy;
     }
 
     public Environment cloneEnvironment(String prefix) {
@@ -267,8 +270,7 @@ public class Environment implements Destructable {
         Processor proc = cloneProcessor(prefix, cloneProcessor);
 
         // build the environment
-        Environment ret = new Environment(sman, proc, rand, getTimeSource(),
-                getParameters(), getExceptionStrategy());
+        Environment ret = new Environment(sman, proc, rand, getTimeSource(), getParameters(), getExceptionStrategy());
 
         // gain shared fate with the rootEnvironment
         addDestructable(ret);
@@ -283,8 +285,7 @@ public class Environment implements Destructable {
     protected SelectorManager cloneSelectorManager(String prefix, TimeSource ts, RandomSource rs, boolean cloneSelector) {
         SelectorManager sman = getSelectorManager();
         if (cloneSelector) {
-            sman = new SelectorManager(prefix + " Selector",
-                    ts, rs);
+            sman = new SelectorManager(prefix + " Selector", ts, rs);
         }
         return sman;
     }
@@ -294,13 +295,11 @@ public class Environment implements Destructable {
         if (cloneProcessor) {
             proc = new SimpleProcessor(prefix + " Processor");
         }
-
         return proc;
     }
 
     protected RandomSource cloneRandomSource() {
-        long randSeed = getRandomSource().nextLong();
-        return new SimpleRandomSource(randSeed);
+        return new SimpleRandomSource();
     }
 }
 
