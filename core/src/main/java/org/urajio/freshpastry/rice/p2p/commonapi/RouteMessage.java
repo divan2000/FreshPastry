@@ -46,7 +46,7 @@ import java.io.Serializable;
  * @author Alan Mislove
  * @author Peter Druschel
  * @version $Id$
- *
+ * <p>
  * This interface is a container which represents a message, as it is
  * about to be forwarded to another node.
  */

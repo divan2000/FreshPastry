@@ -4,6 +4,7 @@ plugins {
 
 dependencies {
     implementation project(':core')
+    implementation group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3'
 }
 
 application {
