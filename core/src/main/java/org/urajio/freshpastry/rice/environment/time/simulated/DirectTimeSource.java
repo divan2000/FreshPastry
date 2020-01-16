@@ -40,13 +40,12 @@ public class DirectTimeSource implements TimeSource {
         this(p.getLong("direct_simulator_start_time"));
     }
 
-    // TODO: dsdiv remove this method
-    public void setLogManager() {
-    }
+    // commented by dsdiv
+//    public void setLogManager() {
+//    }
 
     public void setSelectorManager(SelectorManager sm) {
         selectorManager = sm;
-
     }
 
     public long currentTimeMillis() {

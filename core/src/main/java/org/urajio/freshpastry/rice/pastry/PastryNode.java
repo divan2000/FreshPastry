@@ -83,7 +83,6 @@ public class PastryNode extends Observable implements
     /**
      * Used to deserialize NodeHandles
      */
-    @SuppressWarnings("unchecked")
     protected NodeHandleFactory handleFactory;
     /**
      * Call initiateJoin on this class.
@@ -92,7 +91,6 @@ public class PastryNode extends Observable implements
     /**
      * Call boot on this class.
      */
-    @SuppressWarnings("unchecked")
     protected Bootstrapper bootstrapper;
     /**
      * The top level transport layer.
@@ -208,7 +206,6 @@ public class PastryNode extends Observable implements
         this.router = router;
     }
 
-    @SuppressWarnings("unchecked")
     public void setJoinProtocols(Bootstrapper boot, JoinProtocol joinP, LeafSetProtocol leafsetP, RouteSetProtocol routeP) {
         this.bootstrapper = boot;
         this.joiner = joinP;
@@ -267,7 +264,6 @@ public class PastryNode extends Observable implements
      * @param state true when the node is ready, false when not
      */
     public void nodeIsReady(boolean state) {
-
     }
 
     public void setReady() {
@@ -288,7 +284,6 @@ public class PastryNode extends Observable implements
         logger.info("PastryNode.notifyReadyObservers(" + ready + ")");
 
         if (ready) {
-            nodeIsReady(); // deprecate this
             nodeIsReady(true);
 
             setChanged();
@@ -312,11 +307,6 @@ public class PastryNode extends Observable implements
             nodeIsReady(false);
             setChanged();
             notifyObservers(Boolean.FALSE);
-
-            //        Vector tmpApps = new Vector(apps);
-            //        Iterator it = tmpApps.iterator();
-            //        while (it.hasNext())
-            //           ((PastryAppl) (it.next())).notifyFaulty();
         }
     }
 
@@ -373,26 +363,6 @@ public class PastryNode extends Observable implements
     public void deleteLeafSetListener(NodeSetListener listener) {
         leafSet.deleteNodeSetListener(listener);
     }
-
-    /**
-     * This returns a Endpoint specific to the given application and instance name
-     * to the application, which the application can then use in order to send an
-     * receive messages. This method allows advanced developers to specify which
-     * "port" on the node they wish their application to register as. This "port"
-     * determines which of the applications on top of the node should receive an
-     * incoming message.
-     *
-     * @param application
-     *          The Application
-     * @param port
-     *          The port to use
-     * @return The endpoint specific to this applicationk, which can be used for
-     *         message sending/receiving.
-     */
-//  public rice.p2p.commonapi.Endpoint registerApplication(
-//      rice.p2p.commonapi.Application application, int port) {
-//    return new rice.pastry.commonapi.PastryEndpoint(this, application, port);
-//  }
 
     /**
      * Add a route set observer to the Pastry node.
@@ -579,17 +549,18 @@ public class PastryNode extends Observable implements
 
                 handle.setSubCancellable(tl.openSocket(i,
                         new SocketCallback<NodeHandle>() {
-                            public void receiveResult(SocketRequestHandle<NodeHandle> c,
-                                                      P2PSocket<NodeHandle> result) {
+                            public void receiveResult(SocketRequestHandle<NodeHandle> c, P2PSocket<NodeHandle> result) {
 
-                                if (c != handle.getSubCancellable())
+                                if (c != handle.getSubCancellable()) {
                                     throw new RuntimeException("c != handle.getSubCancellable() (indicates a bug in the code) c:" + c + " sub:" + handle.getSubCancellable());
+                                }
                                 logger.debug("openSocket(" + i + "):receiveResult(" + result + ")");
                                 result.register(false, true, new P2PSocketReceiver<NodeHandle>() {
                                     public void receiveSelectResult(P2PSocket<NodeHandle> socket,
                                                                     boolean canRead, boolean canWrite) throws IOException {
-                                        if (canRead || !canWrite)
+                                        if (canRead || !canWrite) {
                                             throw new IOException("Expected to write! " + canRead + "," + canWrite);
+                                        }
 
                                         // write the appId
                                         if (socket.write(b) == -1) {
@@ -633,7 +604,6 @@ public class PastryNode extends Observable implements
                                                                 return;
                                                             default:
                                                                 deliverSocketToMe.receiveException(new SocketAdapter(socket, getEnvironment()), new AppSocketException("Unknown error " + connectResult));
-                                                                return;
                                                         }
                                                     }
                                                 }
@@ -709,7 +679,6 @@ public class PastryNode extends Observable implements
                                   LivenessProvider<NodeHandle> livenessProvider,
                                   ProximityProvider<NodeHandle> proxProvider,
                                   NodeHandleFactory handleFactory) {
-        this.localhandle = localhandle;
         this.leafSetMaintFreq = lsmf;
         this.routeSetMaintFreq = rsmf;
         this.handleFactory = handleFactory;
@@ -749,7 +718,6 @@ public class PastryNode extends Observable implements
                     appIdBuffer.clear();
                     final int appId = appIdBuffer.asIntBuffer().get();
 
-//          logger.log("Read AppId:"+appId);
                     // we need to write the result, and there is a timing issure on the appl, so we need to first request to write, then do everything
                     // the alternative approach is to return a dummy socket (or a wrapper) and cache any registration request until we write the response
                     socket.register(false, true, new P2PSocketReceiver<NodeHandle>() {
@@ -766,7 +734,6 @@ public class PastryNode extends Observable implements
                                 logger.warn("Sending error to connecter " + socket + " " + new AppNotRegisteredException(appId));
                                 toWrite.put(CONNECTION_NO_APP);
                                 toWrite.clear();
-//                logger.log("incomingSocket("+socket+") rSR(): writing1:"+toWrite);
                                 socket.write(toWrite);
                                 socket.close();
                             } else {
@@ -782,7 +749,6 @@ public class PastryNode extends Observable implements
                                         toWrite.clear();
                                     }
 
-//                  logger.log("rSR(): writing2:"+toWrite);
                                     socket.write(toWrite);
                                     if (toWrite.hasRemaining()) {
                                         // this sucks, because the snychronization with the app-receiver becomes all wrong, this shouldn't normally happen
@@ -792,7 +758,6 @@ public class PastryNode extends Observable implements
                                     }
 
                                     if (success) {
-//                    logger.log("rSR(): delivering socket to receiver:"+toWrite);
                                         acceptorAppl.finishReceiveSocket(new SocketAdapter(socket, getEnvironment()));
                                     }
                                 } // sync
@@ -989,7 +954,6 @@ public class PastryNode extends Observable implements
         return handleFactory.readNodeHandle(buf);
     }
 
-    @SuppressWarnings("unchecked")
     public Bootstrapper getBootstrapper() {
         return bootstrapper;
     }
@@ -1099,23 +1063,8 @@ public class PastryNode extends Observable implements
         proxProvider.addProximityListener(listener);
     }
 
-//  protected NodeHandleFactory handleFactory;
-
     public boolean removeProximityListener(ProximityListener<NodeHandle> listener) {
         return proxProvider.removeProximityListener(listener);
-    }
-
-    /**
-     * Overridden by derived classes, and invoked when the node has joined
-     * successfully.
-     * <p>
-     * This one is for backwards compatability. It will soon be deprecated.
-     *
-     * @deprecated use nodeIsReady(boolean)
-     */
-    public void nodeIsReady() {
-
-        // nothing, used to cancel the joinEvent
     }
 
     public NodeHandleFactory getHandleFactroy() {

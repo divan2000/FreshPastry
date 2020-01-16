@@ -8,4 +8,4 @@
  */
 
 rootProject.name = 'FreshPastry'
-include 'core','examples:dist_hello_world'
+include 'core', 'examples:dist_hello_world'

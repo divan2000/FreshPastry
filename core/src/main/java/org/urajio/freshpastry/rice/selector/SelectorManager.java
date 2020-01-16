@@ -42,8 +42,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
     protected HashSet<SelectionKey> modifyKeys;
     // the list of keys waiting to be cancelled
     protected HashSet<SelectionKey> cancelledKeys;
-    // the set used to store the timer events
-//  protected TreeSet timerQueue = new TreeSet();
+
     protected Queue<TimerTask> timerQueue = new PriorityQueue<>();
     // the next time the selector is scheduled to wake up
     protected long wakeupTime = 0;
@@ -73,12 +72,12 @@ public class SelectorManager extends Thread implements Timer, Destructable {
     /**
      * Constructor, which is private since there is only one selector per JVM.
      */
-    public SelectorManager(String instance,
-                           TimeSource timeSource, RandomSource random) {
-        super(instance == null ? "Selector Thread" : "Selector Thread -- "
-                + instance);
+    public SelectorManager(String instance, TimeSource timeSource, RandomSource random) {
+        super(instance == null ? "Selector Thread" : "Selector Thread -- " + instance);
         this.random = random;
-        if (this.random == null) this.random = new SimpleRandomSource();
+        if (this.random == null) {
+            this.random = new SimpleRandomSource();
+        }
         this.instance = instance;
         this.invocations = new LinkedList<>();
         this.modifyKeys = new HashSet<>();
@@ -89,22 +88,20 @@ public class SelectorManager extends Thread implements Timer, Destructable {
         try {
             selector = Selector.open();
         } catch (IOException e) {
-            System.out
-                    .println("SEVERE ERROR (SelectorManager): Error creating selector "
-                            + e);
+            logger.error("Error creating selector ", e);
         }
         lastTime = timeSource.currentTimeMillis();
     }
 
-    public SelectorManager(String instance,
-                           TimeSource timeSource) {
+    public SelectorManager(String instance, TimeSource timeSource) {
         this(instance, timeSource, new SimpleRandomSource());
     }
 
-    public static void main(String[] args) {
-        new Environment();
-        new Environment();
-    }
+    // commented by dsdiv
+//    public static void main(String[] args) {
+//        new Environment();
+//        new Environment();
+//    }
 
     /**
      * Method which asks the Selector Manager to add the given key to the
@@ -115,8 +112,9 @@ public class SelectorManager extends Thread implements Timer, Destructable {
      * @param key The key to cancel
      */
     public void cancel(SelectionKey key) {
-        if (key == null)
+        if (key == null) {
             throw new NullPointerException();
+        }
 
         cancelledKeys.add(key);
     }
@@ -142,13 +140,15 @@ public class SelectorManager extends Thread implements Timer, Destructable {
      * @param ops     The initial interest operations
      * @return The SelectionKey which uniquely identifies this channel
      */
-    public SelectionKey register(SelectableChannel channel,
-                                 SelectionKeyHandler handler, int ops) throws IOException {
-        if ((channel == null) || (handler == null))
+    public SelectionKey register(SelectableChannel channel, SelectionKeyHandler handler, int ops) throws IOException {
+        if ((channel == null) || (handler == null)) {
             throw new NullPointerException();
+        }
 
         SelectionKey key = channel.register(selector, ops, handler);
-        if (cancelledKeys != null) cancelledKeys.remove(key);
+        if (cancelledKeys != null) {
+            cancelledKeys.remove(key);
+        }
 
         return key;
     }
@@ -162,9 +162,12 @@ public class SelectorManager extends Thread implements Timer, Destructable {
      * @param d The runnable task to invoke
      */
     public synchronized void invoke(Runnable d) {
-        if (d == null)
+        if (d == null) {
             throw new NullPointerException();
-        if (invocations == null) return;
+        }
+        if (invocations == null) {
+            return;
+        }
         invocations.add(d);
         wakeup();
     }
@@ -186,8 +189,9 @@ public class SelectorManager extends Thread implements Timer, Destructable {
      * @param key The key which is to be changed
      */
     public synchronized void modifyKey(SelectionKey key) {
-        if (key == null)
+        if (key == null) {
             throw new NullPointerException();
+        }
 
         modifyKeys.add(key);
         wakeup();
@@ -204,18 +208,17 @@ public class SelectorManager extends Thread implements Timer, Destructable {
      * to be started when this thread's start() method is invoked.
      */
     public void run() {
-        //System.out.println("SelectorManager starting..."+Thread.currentThread());
         logger.info("SelectorManager -- " + instance + " starting...");
 
         lastTime = timeSource.currentTimeMillis();
         // loop while waiting for activity
         while (running) {
             try {
-                if (useLoopListeners)
+                if (useLoopListeners) {
                     notifyLoopListeners();
+                }
 
-                // NOTE: This is so we aren't always holding the selector lock when we
-                // get context switched
+                // NOTE: This is so we aren't always holding the selector lock when we get context switched
                 Thread.yield();
                 executeDueTasks();
                 onLoop();
@@ -237,15 +240,13 @@ public class SelectorManager extends Thread implements Timer, Destructable {
 
                         cancelledKeys.clear();
 
-                        // now, hack to make sure that all cancelled keys are actually
-                        // cancelled (dumb)
+                        // now, hack to make sure that all cancelled keys are actually cancelled (dumb)
                         selector.selectNow();
                     }
                 } // if select
             } catch (Throwable t) {
                 logger.error("ERROR (SelectorManager.run): ", t);
                 environment.getExceptionStrategy().handleException(this, t);
-//        System.exit(-1);
             }
         } // while(running)
         invocations.clear();
@@ -266,7 +267,6 @@ public class SelectorManager extends Thread implements Timer, Destructable {
         logger.info("Selector " + instance + " shutting down.");
     }
 
-    @SuppressWarnings("deprecation")
     public void destroy() {
         logger.debug("destroying SelectorManager", new Exception("Stack Trace"));
         logger.info("destroying SelectorManager");
@@ -275,8 +275,6 @@ public class SelectorManager extends Thread implements Timer, Destructable {
 
     /**
      * Set this to false when using the simulator, because you don't need to notify loop observers.
-     *
-     * @param val
      */
     public void useLoopListeners(boolean val) {
         useLoopListeners = val;
@@ -331,7 +329,6 @@ public class SelectorManager extends Thread implements Timer, Destructable {
         }
 
         for (SelectionKey key : keys) {
-//      System.out.println("handling key "+keys[i].attachment());
             selector.selectedKeys().remove(key);
 
             synchronized (key) {
@@ -390,8 +387,6 @@ public class SelectorManager extends Thread implements Timer, Destructable {
                         ctr++;
                     }
                 }
-//        if (logger.level <= Logger.SEVERE) logger.logException(
-//            "Invoking runnable caused exception " + e + " - continuing",e);
                 throw e;
             }
         }
@@ -421,17 +416,6 @@ public class SelectorManager extends Thread implements Timer, Destructable {
         else
             return null;
     }
-
-    /**
-     * Selects all of the keys on the selector and returns the result as an array
-     * of keys.
-     *
-     * @return The array of keys
-     * @exception IOException DESCRIBE THE EXCEPTION
-     */
-//  private SelectionKey[] keys() throws IOException {
-//    return (SelectionKey[]) selector.keys().toArray(new SelectionKey[0]);
-//  }
 
     /**
      * Method which synchroniously returns on element off of the modifyKeys list
@@ -561,11 +545,8 @@ public class SelectorManager extends Thread implements Timer, Destructable {
         synchronized (seqLock) {
             task.seq = seqCtr++;
         }
-//    if (logger.level <= Logger.FINE && task.scheduledExecutionTime() <= timeSource.currentTimeMillis()) {
-//      logger.logException("Scheduling task for now:"+task, new Exception());
-//    }
+
         logger.debug("addTask(" + task + ") scheduled for " + task.scheduledExecutionTime());
-//    synchronized (selector) {
         if (!timerQueue.add(task)) {
             logger.warn("ERROR: Got false while enqueueing task " + task + "!");
             Thread.dumpStack();
@@ -588,9 +569,6 @@ public class SelectorManager extends Thread implements Timer, Destructable {
                 wakeup();
             }
         }
-
-//    } // synchronized
-
     }
 
     public synchronized void removeTask(TimerTask task) {
@@ -602,16 +580,13 @@ public class SelectorManager extends Thread implements Timer, Destructable {
      * Note, should hold the selector's (this) lock to call this.
      */
     public void wakeup() {
-        //System.out.println("wakeup()");
         selector.wakeup();
         this.notifyAll();
     }
 
     public long getNextTaskExecutionTime() {
-//    if (!invocations.isEmpty()) return timeSource.currentTimeMillis();
         if (timerQueue.size() > 0) {
             TimerTask next = timerQueue.peek();
-            //System.out.println(next);
             return next.scheduledExecutionTime();
         }
         return -1;
@@ -634,8 +609,6 @@ public class SelectorManager extends Thread implements Timer, Destructable {
                     TimerTask next = timerQueue.peek();
                     if (next.scheduledExecutionTime() <= now) {
                         executeNow.add(next);
-                        //System.out.println("Removing:"+next);
-//            timerQueue.remove(next);
                         timerQueue.poll();
                     } else {
                         done = true;
@@ -667,7 +640,6 @@ public class SelectorManager extends Thread implements Timer, Destructable {
                     i = addBack.iterator();
                     while (i.hasNext()) {
                         TimerTask tt = i.next();
-                        //System.out.println("SM.addBack("+tt+")");
                         timerQueue.add(tt);
                     }
                 }
@@ -681,7 +653,6 @@ public class SelectorManager extends Thread implements Timer, Destructable {
             i = addBack.iterator();
             while (i.hasNext()) {
                 TimerTask tt = i.next();
-                //System.out.println("SM.addBack("+tt+")");
                 timerQueue.add(tt);
             }
         }
@@ -728,8 +699,8 @@ public class SelectorManager extends Thread implements Timer, Destructable {
         start();
     }
 
-    public void setLogLevel(int level) {
-        // TODO: dsdiv remove this
-        //logger.level = level;
-    }
+    // commented by dsdiv
+//    public void setLogLevel(int level) {
+//        //logger.level = level;
+//    }
 }

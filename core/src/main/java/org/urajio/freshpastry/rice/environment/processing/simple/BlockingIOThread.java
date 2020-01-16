@@ -24,7 +24,6 @@ public class BlockingIOThread extends Thread {
         }
     }
 
-    @SuppressWarnings("deprecation")
     public void destroy() {
         running = false;
         workQ.destroy();

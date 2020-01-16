@@ -447,7 +447,7 @@ public class RouteSet implements NodeSetI, Serializable,
      * found.
      */
     public org.urajio.freshpastry.rice.p2p.commonapi.NodeHandle getHandle(org.urajio.freshpastry.rice.p2p.commonapi.Id id) {
-        return getHandle(id);
+        return getHandle(id); // TODO: recursion here
     }
 
     /**

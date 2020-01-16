@@ -23,9 +23,7 @@ import java.util.Map;
  * @author Andrew Ladd
  * @version $Id$
  */
-
-public class RouteMessage extends PRawMessage implements Serializable,
-        org.urajio.freshpastry.rice.p2p.commonapi.RouteMessage {
+public class RouteMessage extends PRawMessage implements Serializable, org.urajio.freshpastry.rice.p2p.commonapi.RouteMessage {
     public static final short TYPE = -23525;
     private static final long serialVersionUID = 3492981895989180093L;
     public Message internalMsg;
@@ -57,11 +55,10 @@ public class RouteMessage extends PRawMessage implements Serializable,
     /**
      * Constructor.
      *
-     * @param target this is id of the node the message will be routed to.
-     * @param msg    the wrapped message.
-     * @param cred   the credentials for the message.
+     * @param target           this is id of the node the message will be routed to.
+     * @param msg              the wrapped message.
+     * @param serializeVersion
      */
-
     public RouteMessage(Id target, Message msg, byte serializeVersion) {
         this(target, msg, null, null, serializeVersion);
     }
@@ -69,12 +66,11 @@ public class RouteMessage extends PRawMessage implements Serializable,
     /**
      * Constructor.
      *
-     * @param target this is id of the node the message will be routed to.
-     * @param msg    the wrapped message.
-     * @param cred   the credentials for the message.
-     * @param opts   the send options for the message.
+     * @param target           this is id of the node the message will be routed to.
+     * @param msg              the wrapped message.
+     * @param opts             the send options for the message.
+     * @param serializeVersion
      */
-
     public RouteMessage(Id target, Message msg, SendOptions opts, byte serializeVersion) {
         this(target, msg, null, opts, serializeVersion);
     }
@@ -82,25 +78,22 @@ public class RouteMessage extends PRawMessage implements Serializable,
     /**
      * Constructor.
      *
-     * @param dest the node this message will be routed to
-     * @param msg  the wrapped message.
-     * @param cred the credentials for the message.
-     * @param opts the send options for the message.
-     * @param aux  an auxilary address which the message after each hop.
+     * @param dest             the node this message will be routed to
+     * @param msg              the wrapped message.
+     * @param opts             the send options for the message.
+     * @param serializeVersion
      */
-
-    public RouteMessage(NodeHandle dest, Message msg,
-                        SendOptions opts, byte serializeVersion) {
+    public RouteMessage(NodeHandle dest, Message msg, SendOptions opts, byte serializeVersion) {
         this(dest.getNodeId(), msg, dest, opts, serializeVersion);
     }
 
     /**
      * Constructor.
      *
-     * @param target   this is id of the node the message will be routed to.
-     * @param msg      the wrapped message.
-     * @param firstHop the nodeHandle of the first hop destination
-     * @param aux      an auxilary address which the message after each hop.
+     * @param target           this is id of the node the message will be routed to.
+     * @param msg              the wrapped message.
+     * @param firstHop         the nodeHandle of the first hop destination
+     * @param serializeVersion
      */
     public RouteMessage(Id target, Message msg, NodeHandle firstHop, byte serializeVersion) {
         this(target, msg, firstHop, null, serializeVersion);
@@ -116,11 +109,11 @@ public class RouteMessage extends PRawMessage implements Serializable,
     /**
      * Constructor.
      *
-     * @param target   this is id of the node the message will be routed to.
-     * @param msg      the wrapped message.
-     * @param firstHop the nodeHandle of the first hop destination
-     * @param opts     the send options for the message.
-     * @param aux      an auxiliary address which the message after each hop.
+     * @param target           this is id of the node the message will be routed to.
+     * @param msg              the wrapped message.
+     * @param firstHop         the nodeHandle of the first hop destination
+     * @param opts             the send options for the message.
+     * @param serializeVersion
      */
     public RouteMessage(Id target, Message msg, NodeHandle firstHop, SendOptions opts, byte serializeVersion) {
         super(RouterAddress.getCode());
@@ -129,29 +122,28 @@ public class RouteMessage extends PRawMessage implements Serializable,
         internalMsg = msg;
         nextHop = firstHop;
         this.opts = opts;
-        if (this.opts == null) this.opts = new SendOptions();
-        if (msg != null) // can be null on the deserialization, but that ctor properly sets auxAddress
+        if (this.opts == null) {
+            this.opts = new SendOptions();
+        }
+        // can be null on the deserialization, but that ctor properly sets auxAddress
+        if (msg != null) {
             auxAddress = msg.getDestination();
+        }
     }
 
     public RouteMessage(Id target, int auxAddress, NodeHandle prev, InputBuffer buf, byte priority, PastryNode pn, NodeHandle destinationHandle, byte serializeVersion) throws IOException {
         this(target, null, null, null, serializeVersion);
         hasSender = buf.readBoolean();
-        internalPriority = priority; //buf.readByte();
+        internalPriority = priority;
         internalType = buf.readShort();
         prevNode = prev;
         serializedMsg = buf;
         this.destinationHandle = destinationHandle;
         this.pn = pn;
         this.auxAddress = auxAddress;
-//    System.out.println("RouteMessage.build(): v:"+version+" addr:"+auxAddress+" dest:"+destinationHandle+" target:"+target+" prev:"+prevNode+" pri:"+internalPriority+" type:"+internalType+" hasSender:"+hasSender);
-
     }
 
     private static PRawMessage convert(Message msg) {
-//    if (msg instanceof PastryEndpointMessage) {
-//      msg = ((PastryEndpointMessage)msg).getMessage();
-//    }
         if (msg instanceof PRawMessage) {
             PRawMessage prm = (PRawMessage) msg;
             if (prm.getType() == 0)
@@ -221,7 +213,6 @@ public class RouteMessage extends PRawMessage implements Serializable,
             case 0: {
                 int auxAddress = buf.readInt();
                 Id target = Id.build(buf);
-//        NodeHandle prev = pn.readNodeHandle(buf);
                 return new RouteMessage(target, auxAddress, prev, buf, priority, pn, null, outputVersion);
             }
             case 1: {
@@ -235,8 +226,6 @@ public class RouteMessage extends PRawMessage implements Serializable,
                 } else {
                     target = Id.build(buf);
                 }
-//        NodeHandle prev = pn.readNodeHandle(buf);
-//        System.out.println("RM.build() v:"+version+" aux:"+auxAddress+" t:"+target+" d:"+destHandle+" hDh:"+hasDestHandle);
                 return new RouteMessage(target, auxAddress, prev, buf, priority, pn, destHandle, outputVersion);
             }
             default:
@@ -249,23 +238,10 @@ public class RouteMessage extends PRawMessage implements Serializable,
      *
      * @return the target node id.
      */
-
     public Id getTarget() {
         return target;
     }
 
-    /**
-     * Get receiver address.
-     *
-     * @return the address.
-     */
-
-//  public int getDestination() {
-//    if (nextHop == null || auxAddress == 0)
-//      return super.getDestination();
-//
-//    return auxAddress;
-//  }
     public NodeHandle getPrevNode() {
         return prevNode;
     }
@@ -281,7 +257,6 @@ public class RouteMessage extends PRawMessage implements Serializable,
     // Common API Support
 
     public void setNextHop(NodeHandle nh) {
-//    new Exception(this+".setNextHop("+nh+"):"+nh.getLiveness()).printStackTrace();
         nextHop = nh;
     }
 
@@ -290,7 +265,7 @@ public class RouteMessage extends PRawMessage implements Serializable,
      *
      * @return the priority of this message.
      */
-
+    @Override
     public int getPriority() {
         if (internalMsg != null)
             return internalMsg.getPriority();
@@ -320,7 +295,6 @@ public class RouteMessage extends PRawMessage implements Serializable,
      *
      * @return the options.
      */
-
     public SendOptions getOptions() {
         if (opts == null) {
             opts = new SendOptions();
@@ -328,6 +302,7 @@ public class RouteMessage extends PRawMessage implements Serializable,
         return opts;
     }
 
+    @Override
     public String toString() {
         if (internalMsg == null) {
             return "R[serialized{" + auxAddress + "," + internalType + "}]";
@@ -336,18 +311,22 @@ public class RouteMessage extends PRawMessage implements Serializable,
         return "R[" + internalMsg + "]";
     }
 
+    @Override
     public org.urajio.freshpastry.rice.p2p.commonapi.Id getDestinationId() {
         return getTarget();
     }
 
+    @Override
     public void setDestinationId(org.urajio.freshpastry.rice.p2p.commonapi.Id id) {
         target = (Id) id;
     }
 
+    @Override
     public org.urajio.freshpastry.rice.p2p.commonapi.NodeHandle getNextHopHandle() {
         return nextHop;
     }
 
+    @Override
     public void setNextHopHandle(org.urajio.freshpastry.rice.p2p.commonapi.NodeHandle nextHop) {
         this.nextHop = (NodeHandle) nextHop;
     }
@@ -355,26 +334,29 @@ public class RouteMessage extends PRawMessage implements Serializable,
     /**
      * @deprecated use getMessage(MessageDeserializer)
      */
-    @SuppressWarnings("deprecation")
+    @Override
     public org.urajio.freshpastry.rice.p2p.commonapi.Message getMessage() {
         return ((PastryEndpointMessage) unwrap()).getMessage();
     }
 
+    @Override
     public void setMessage(org.urajio.freshpastry.rice.p2p.commonapi.Message message) {
         ((PastryEndpointMessage) unwrap()).setMessage(message);
     }
 
+    @Override
     public void setMessage(RawMessage message) {
         ((PastryEndpointMessage) unwrap()).setMessage(message);
     }
 
+    @Override
     public org.urajio.freshpastry.rice.p2p.commonapi.Message getMessage(MessageDeserializer md) throws IOException {
         endpointDeserializer.setSubDeserializer(md);
         return ((PastryEndpointMessage) unwrap(endpointDeserializer)).getMessage();
     }
 
+    @Override
     public void serialize(OutputBuffer buf) throws IOException {
-//    System.out.println(this+".serialize()");
         buf.writeByte(version); // version (deserialized in build())
         buf.writeInt(auxAddress); // (deserialized in build())
         switch (version) {
@@ -390,12 +372,9 @@ public class RouteMessage extends PRawMessage implements Serializable,
                 }
         } // switch
 
-//    prevNode.serialize(buf); // (deserialized in build())
         if (serializedMsg != null) { // pri, sdr
-//      System.out.println(this+".serialize() 1 "+serializedMsg.bytesRemaining());
             // fixed Fabio's bug from Nov 2006 (these were deserialized in the constructer above, but not added back into the internal stream.)
             buf.writeBoolean(hasSender);
-//      buf.writeByte(internalPriority);
 
             buf.writeShort(internalType);
 
@@ -405,7 +384,6 @@ public class RouteMessage extends PRawMessage implements Serializable,
             buf.write(raw, 0, raw.length);
             serializedMsg = new SimpleInputBuffer(raw);
         } else {
-//      System.out.println(this+".serialize() 2");
             if (rawInternalMsg == null) {
                 rawInternalMsg = convert(internalMsg);
             }
@@ -436,12 +414,9 @@ public class RouteMessage extends PRawMessage implements Serializable,
                 throw new IllegalStateException("Priority must be in the range of " + Byte.MIN_VALUE + " to " + Byte.MAX_VALUE + ".  Lower values are higher priority. Priority of " + rawInternalMsg + " was " + priority + ".");
             if (priority < Byte.MIN_VALUE)
                 throw new IllegalStateException("Priority must be in the range of " + Byte.MIN_VALUE + " to " + Byte.MAX_VALUE + ".  Lower values are higher priority. Priority of " + rawInternalMsg + " was " + priority + ".");
-//      buf.writeByte((byte)priority);
 
             short type = rawInternalMsg.getType();
             buf.writeShort(type);
-
-//      System.out.println("RouteMessage.serialize(): v:"+version+" addr:"+auxAddress+" dest:"+destinationHandle+" target:"+target+" prev:"+prevNode+" pri:"+priority+" type:"+type+" sender:"+sender);
 
             if (hasSender) {
                 sender.serialize(buf);
@@ -455,15 +430,6 @@ public class RouteMessage extends PRawMessage implements Serializable,
         if (internalMsg != null) {
             return internalMsg;
         }
-//
-//      if (internalMsg.getType() == 0) {
-//        PJavaSerializedMessage pjsm = (PJavaSerializedMessage)internalMsg;
-//        return pjsm.getMessage();
-//      }
-//      return internalMsg;
-//    }
-
-        // deserialize using md
 
 //  address was already peeled off as the auxAddress
 //  different wire to deserialize the Address and eliminate unneeded junk
@@ -480,7 +446,6 @@ public class RouteMessage extends PRawMessage implements Serializable,
 //  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
         NodeHandle internalSender = null;
-//    short internalType = serializedMsg.readShort();
         if (hasSender) {
             internalSender = pn.readNodeHandle(serializedMsg);
         }
@@ -494,6 +459,7 @@ public class RouteMessage extends PRawMessage implements Serializable,
         return internalMsg;
     }
 
+    @Override
     public short getType() {
         return TYPE;
     }
@@ -550,7 +516,6 @@ public class RouteMessage extends PRawMessage implements Serializable,
      * Return true if it notified a higher layer.
      *
      * @param e
-     * @return
      */
     public boolean sendFailed(Exception e) {
         if (notifyMe != null) notifyMe.sendFailed(this, e);
@@ -570,15 +535,11 @@ public class RouteMessage extends PRawMessage implements Serializable,
             sub = md;
         }
 
+        @Override
         public Message deserialize(InputBuffer buf, short type, int priority, NodeHandle sender) throws IOException {
             // just in case we have to do java serialization
             pn = RouteMessage.this.pn;
-//      switch(type) {
-//        case PastryEndpointMessage.TYPE:
             return new PastryEndpointMessage(auxAddress, buf, sub, type, priority, sender);
-//      }
-//      return null;
         }
-
     }
 }

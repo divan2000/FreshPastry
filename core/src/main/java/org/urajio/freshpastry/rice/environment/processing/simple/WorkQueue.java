@@ -8,7 +8,6 @@ import java.util.List;
 /**
  * @author Jeff Hoye
  */
-@SuppressWarnings("unchecked")
 public class WorkQueue {
     List<WorkRequest> q = new LinkedList<>();
     /* A negative capacity, is equivalent to infinted capacity */

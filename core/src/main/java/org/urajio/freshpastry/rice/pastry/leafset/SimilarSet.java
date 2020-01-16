@@ -1,38 +1,3 @@
-/*******************************************************************************
-
- "FreePastry" Peer-to-Peer Application Development Substrate
-
- Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
- for Software Systems.  All rights reserved.
-
- Redistribution and use in source and binary forms, with or without
- modification, are permitted provided that the following conditions are
- met:
-
- - Redistributions of source code must retain the above copyright
- notice, this list of conditions and the following disclaimer.
-
- - Redistributions in binary form must reproduce the above copyright
- notice, this list of conditions and the following disclaimer in the
- documentation and/or other materials provided with the distribution.
-
- - Neither the name of Rice  University (RICE), Max Planck Institute for Software
- Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
- promote products derived from this software without specific prior written
- permission.
-
- This software is provided by RICE, MPI-SWS and the contributors on an "as is"
- basis, without any representations or warranties of any kind, express or implied
- including, but not limited to, representations or warranties of
- non-infringement, merchantability or fitness for a particular purpose. In no
- event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
- incidental, special, exemplary, or consequential damages (including, but not
- limited to, procurement of substitute goods or services; loss of use, data, or
- profits; or business interruption) however caused and on any theory of
- liability, whether in contract, strict liability, or tort (including negligence
- or otherwise) arising in any way out of the use of this software, even if
- advised of the possibility of such damage.
- *******************************************************************************/
 package org.urajio.freshpastry.rice.pastry.leafset;
 
 import org.urajio.freshpastry.rice.pastry.*;
@@ -462,9 +427,7 @@ public class SimilarSet extends Observable implements NodeSetEventSource, Serial
         if (rs.size() == 1) {
             NodeHandle nh = rs.get(0);
             if (nh.isAlive()) {
-                if (put(nh)) {
-//          System.out.println("SimilarSet.addNextEntry()1:"+nh+" "+leafSet);
-                }
+                put(nh);
             }
             return theSize == nodes.length;
         }
@@ -482,9 +445,7 @@ public class SimilarSet extends Observable implements NodeSetEventSource, Serial
                 return false;
             case 1: {
                 NodeHandle nh = toUse.get(0);
-                if (put(nh)) {
-//            System.out.println("SimilarSet.addNextEntry()2:"+nh+" "+leafSet);
-                }
+                put(nh);
             }
             break;
             default:
@@ -498,9 +459,7 @@ public class SimilarSet extends Observable implements NodeSetEventSource, Serial
                     }
                 });
                 for (NodeHandle nh : toUse) {
-                    if (put(nh)) {
-//            System.out.println("SimilarSet.addNextEntry()3:"+nh+" "+leafSet);
-                    }
+                    put(nh);
                 }
         }
         return theSize == nodes.length;
@@ -613,17 +572,6 @@ public class SimilarSet extends Observable implements NodeSetEventSource, Serial
     public boolean putHandle(org.urajio.freshpastry.rice.p2p.commonapi.NodeHandle handle) {
         return put((NodeHandle) handle);
     }
-
-    /**
-     * Finds the NodeHandle associated with the Id.
-     *
-     * @param id a node id.
-     * @return the handle associated with that id or null if no such handle is
-     *         found.
-     */
-//  public rice.p2p.commonapi.NodeHandle getHandle(rice.p2p.commonapi.Id id) {
-//    return getHandle((Id) id);
-//  }
 
     /**
      * Gets the ith element in the set.

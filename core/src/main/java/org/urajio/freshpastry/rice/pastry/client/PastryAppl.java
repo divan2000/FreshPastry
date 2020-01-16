@@ -152,7 +152,7 @@ public abstract class PastryAppl /*implements Observer*/ {
             // NOTE: the idea is to synchronize on undeliveredMessages while making the check as to whether or not to add to the queue
             // the other part of the synchronization is just below, in update()
             // we don't want to hold the lock to undeliveredMessages when calling receiveMessage()
-//      synchronized(undeliveredMessages) {
+
             // if the message has a destinationHandle, it should be for me, and it should always be delivered
             NodeHandle destinationHandle = rm.getDestinationHandle();
             if (deliverWhenNotReady() ||
@@ -166,11 +166,7 @@ public abstract class PastryAppl /*implements Observer*/ {
                 } else {
                     logger.warn("Dropping " + msg + " because node is not ready.");
                 }
-                // enable this if you want to forward RouteMessages when not ready, without calling the "forward()" method on the PastryAppl that sent the message
-//          RouteMessage rm = (RouteMessage)msg;
-//          rm.routeMessage(this.localNode.getLocalHandle());
 
-//          undeliveredMessages.add(msg);
                 return;
             }
 //      } // synchronized
@@ -471,7 +467,7 @@ public abstract class PastryAppl /*implements Observer*/ {
         return receiver != null;
     }
 
-    public void finishReceiveSocket(AppSocket socket) throws IOException {
+    public void finishReceiveSocket(AppSocket socket) {
         AppSocketReceiver theReceiver = receiver;
         receiver = null;
         theReceiver.receiveSocket(socket);

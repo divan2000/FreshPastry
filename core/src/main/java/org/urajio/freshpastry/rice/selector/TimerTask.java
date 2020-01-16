@@ -40,11 +40,10 @@ public abstract class TimerTask implements Comparable<TimerTask>, CancellableTas
         if (period > 0) {
             if (fixedRate) {
                 nextExecutionTime += period;
-                return true;
             } else {
                 nextExecutionTime = ts.currentTimeMillis() + period;
-                return true;
             }
+            return true;
         } else {
             return false;
         }

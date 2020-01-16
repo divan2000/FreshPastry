@@ -58,7 +58,6 @@ public class MessageDispatch implements Destructable {
 
 
         logger.debug("Registering " + receiver + " for address " + address);
-        logger.debug("Registering receiver for address " + address, new Exception("stack trace"));
         if (addressBook.get(address) != null) {
             throw new IllegalArgumentException("Registering receiver for already-registered address " + address);
         }

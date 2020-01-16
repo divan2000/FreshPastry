@@ -70,9 +70,6 @@ public class Environment implements Destructable {
         this.selectorManager.setEnvironment(this);
 
         addDestructable(this.time);
-
-//    addDestructable(this.selectorManager);
-//    addDestructable(this.processor);
     }
 
     /**

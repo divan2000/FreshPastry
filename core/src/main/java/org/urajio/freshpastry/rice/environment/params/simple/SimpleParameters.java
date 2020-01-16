@@ -24,8 +24,8 @@ import java.util.*;
  */
 public class SimpleParameters implements Parameters {
 
-    public static final String FILENAME_EXTENSION = ".params";
     public static final String ARRAY_SPACER = ",";
+    private static final String FILENAME_EXTENSION = ".params";
     public static final String defaultParamsFile = "user" + FILENAME_EXTENSION;
     private MyProperties properties;
     private MyProperties defaults;
@@ -48,7 +48,6 @@ public class SimpleParameters implements Parameters {
         } else {
             try {
                 File f = new File(defaultParamsFile);
-//        System.out.println(f.getAbsolutePath());
                 if (f.exists()) {
                     this.configFileName = defaultParamsFile;
                 }
@@ -66,13 +65,9 @@ public class SimpleParameters implements Parameters {
                 // some VMs report the bootstrap classloader via null-return
                 if (loader == null)
                     loader = ClassLoader.getSystemClassLoader();
-                this.defaults.load(loader.getResource(
-                        orderedDefault + FILENAME_EXTENSION).openStream());
+                this.defaults.load(loader.getResource(orderedDefault + FILENAME_EXTENSION).openStream());
             } catch (Exception ioe) {
-                String errorString = "Warning, couldn't load param file:"
-                        + (orderedDefault + FILENAME_EXTENSION);
-//        System.err.println(errorString);
-//        ioe.printStackTrace(System.err);
+                String errorString = "Warning, couldn't load param file: " + (orderedDefault + FILENAME_EXTENSION);
                 throw new ParamsNotPresentException(errorString, ioe);
             }
         }
@@ -86,18 +81,15 @@ public class SimpleParameters implements Parameters {
                     throw new ParamsNotPresentException("Error loading " + f, e);
                 }
             } else {
-                System.err.println("Configuration file " + f.getAbsolutePath()
-                        + " not present.  Using defaults.");
+                System.err.println("Configuration file " + f.getAbsolutePath() + " not present.  Using defaults.");
             }
         }
     }
 
-    @SuppressWarnings("unchecked")
     public Enumeration enumerateDefaults() {
         return defaults.keys();
     }
 
-    @SuppressWarnings("unchecked")
     public Enumeration enumerateNonDefaults() {
         return properties.keys();
     }
@@ -210,26 +202,23 @@ public class SimpleParameters implements Parameters {
         try {
             return Long.parseLong(getProperty(name));
         } catch (NumberFormatException nfe) {
-            throw new NumberFormatException(nfe.getMessage() + " for parameter "
-                    + name);
+            throw new NumberFormatException(nfe.getMessage() + " for parameter " + name);
         }
     }
 
     public boolean getBoolean(String name) {
-        return Boolean.valueOf(getProperty(name));
+        return Boolean.parseBoolean(getProperty(name));
     }
 
     public InetAddress getInetAddress(String name) throws UnknownHostException {
         return InetAddress.getByName(getString(name));
     }
 
-    public InetSocketAddress getInetSocketAddress(String name)
-            throws UnknownHostException {
+    public InetSocketAddress getInetSocketAddress(String name) {
         return parseInetSocketAddress(getString(name));
     }
 
-    public InetSocketAddress[] getInetSocketAddressArray(String name)
-            throws UnknownHostException {
+    public InetSocketAddress[] getInetSocketAddressArray(String name) {
         if (getString(name).length() == 0)
             return new InetSocketAddress[0];
 
@@ -353,7 +342,6 @@ public class SimpleParameters implements Parameters {
     }
 
     protected class MyProperties extends Properties {
-        @SuppressWarnings("unchecked")
         public Enumeration keys() {
             final String[] keys = keySet().toArray(new String[0]);
             Arrays.sort(keys);

@@ -1,5 +1,6 @@
 package org.urajio.freshpastry.rice.p2p.util;
 
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -106,8 +107,7 @@ public class RedBlackMap extends AbstractMap implements SortedMap, Cloneable, ja
         comparator = m.comparator();
         try {
             buildFromSorted(m.size(), m.entrySet().iterator(), null, null);
-        } catch (java.io.IOException cannotHappen) {
-        } catch (ClassNotFoundException cannotHappen) {
+        } catch (IOException | ClassNotFoundException cannotHappen) {
         }
     }
 
@@ -405,8 +405,7 @@ public class RedBlackMap extends AbstractMap implements SortedMap, Cloneable, ja
                 try {
                     buildFromSorted(mapSize, map.entrySet().iterator(),
                             null, null);
-                } catch (java.io.IOException cannotHappen) {
-                } catch (ClassNotFoundException cannotHappen) {
+                } catch (IOException | ClassNotFoundException cannotHappen) {
                 }
                 return;
             }
@@ -628,8 +627,7 @@ public class RedBlackMap extends AbstractMap implements SortedMap, Cloneable, ja
         // Initialize clone with our mappings
         try {
             clone.buildFromSorted(size, entrySet().iterator(), null, null);
-        } catch (java.io.IOException cannotHappen) {
-        } catch (ClassNotFoundException cannotHappen) {
+        } catch (IOException | ClassNotFoundException cannotHappen) {
         }
 
         return clone;
@@ -1223,8 +1221,7 @@ public class RedBlackMap extends AbstractMap implements SortedMap, Cloneable, ja
     void addAllForTreeSet(SortedSet set, Object defaultVal) {
         try {
             buildFromSorted(set.size(), set.iterator(), null, defaultVal);
-        } catch (java.io.IOException cannotHappen) {
-        } catch (ClassNotFoundException cannotHappen) {
+        } catch (IOException | ClassNotFoundException cannotHappen) {
         }
     }
 

@@ -165,26 +165,6 @@ public class IdRange implements org.urajio.freshpastry.rice.p2p.commonapi.IdRang
     }
 
     /**
-     * set counterclockwise edge of range
-     *
-     * @param ccw the new id at the counterclockwise edge of the range (inclusive)
-     */
-//  private void setCCW(Id ccw) {
-//    this.ccw = ccw;
-//    empty = false;
-//  }
-
-    /**
-     * set clockwise edge of range
-     *
-     * @param cw the new id at the clockwise edge of the range (exclusive)
-     */
-//  private void setCW(Id cw) {
-//    this.cw = cw;
-//    empty = false;
-//  }
-
-    /**
      * get clockwise edge of range
      *
      * @return the id at the clockwise edge of the range (exclusive)

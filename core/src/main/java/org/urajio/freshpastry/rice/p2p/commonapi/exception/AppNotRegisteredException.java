@@ -6,14 +6,14 @@ package org.urajio.freshpastry.rice.p2p.commonapi.exception;
  * @author Jeff Hoye
  */
 public class AppNotRegisteredException extends AppSocketException {
-    private int appid;
+    private int appId;
 
-    public AppNotRegisteredException(int appid) {
-        super("Application with id " + appid + " not registered.");
-        this.appid = appid;
+    public AppNotRegisteredException(int appId) {
+        super("Application with id " + appId + " not registered.");
+        this.appId = appId;
     }
 
-    public int getAppid() {
-        return appid;
+    public int getAppId() {
+        return appId;
     }
 }

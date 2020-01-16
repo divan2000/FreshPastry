@@ -42,10 +42,6 @@ public interface IdSet extends Serializable {
 
     /**
      * return a subset of this set, consisting of the member ids in a given range
-     *
-     * @param from the lower end of the range (inclusive)
-     * @param to   the upper end of the range (exclusive)
-     * @return the subset
      */
     IdSet subSet(IdRange range);
 

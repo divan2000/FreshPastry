@@ -265,7 +265,7 @@ public abstract class NodeHandle extends org.urajio.freshpastry.rice.p2p.commona
         public int compareTo(ObsPri o) {
             int ret = o.pri - pri;
             if (ret == 0) {
-                if (o.equals(o)) {
+                if (o.equals(o)) { // TODO: error?
                     return 0;
                 } else {
                     return System.identityHashCode(o) - System.identityHashCode(this);

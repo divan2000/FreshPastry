@@ -21,7 +21,7 @@ import java.util.*;
  */
 public class LeafSet extends Observable implements Serializable, Iterable<NodeHandle> {
     static private final long serialVersionUID = 3960030608598552977L;
-    transient boolean observe = true;
+    transient boolean observe;
     // can get backup entries from this when we remove
     transient RoutingTable routingTable;
     private Id baseId;
@@ -746,7 +746,7 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
             if (i == 0) nh = from;
             else nh = remotels.get(i);
 
-            if (nh.isAlive() == false) continue;
+            if (!nh.isAlive()) continue;
             //if (member(nh.getNodeId())) continue;
 
             if (testOnly) {
@@ -772,7 +772,7 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
             if (i == 0) nh = from;
             else nh = remotels.get(i);
 
-            if (nh.isAlive() == false) continue;
+            if (!nh.isAlive()) continue;
             //if (member(nh.getNodeId())) continue;
 
             if (testOnly) {
@@ -800,7 +800,7 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
                 if (i == 0) nh = from;
                 else nh = remotels.get(i);
 
-                if (nh.isAlive() == false) continue;
+                if (!nh.isAlive()) continue;
 
                 if (testOnly) {
                     // merge into our leaf set

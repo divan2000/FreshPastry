@@ -54,17 +54,6 @@ public final class IdSet implements org.urajio.freshpastry.rice.p2p.commonapi.Id
     }
 
     /**
-     * Copy constructor.
-     * constructs a shallow copy of the given IdSet o.
-     * @param o the IdSet to copy
-     */
-//  public IdSet(IdSet o) {
-//    idSet = o.idSet;
-//    cachedHash = o.cachedHash;
-//    validHash = o.validHash;
-//  }
-
-    /**
      * return the number of elements
      */
     public int numElements() {
@@ -128,19 +117,6 @@ public final class IdSet implements org.urajio.freshpastry.rice.p2p.commonapi.Id
      */
     public IdSet subSet(Id from, Id to) {
         return new IdSet(idSet.subMap(from, to));
-/*    IdSet res;
-
-    if (from.compareTo(to) <= 0) {
-      res = new IdSet(idSet.subMap(from, to));
-    } else {
-      res = new IdSet(idSet.tailMap(from));
-      //SortedSet ss = idSet.tailSet(from);
-      //ss.addAll(idSet.headSet(to));
-      //res = new IdSet( (TreeSet) ss);
-      res.idSet.putAll(idSet.headMap(to));
-    }
-
-    return res; */
     }
 
     /**
@@ -177,7 +153,7 @@ public final class IdSet implements org.urajio.freshpastry.rice.p2p.commonapi.Id
         if (validHash) return cachedHash;
 
         // recompute the hash
-        MessageDigest md = null;
+        MessageDigest md;
         try {
             md = MessageDigest.getInstance("SHA");
         } catch (NoSuchAlgorithmException e) {
@@ -258,13 +234,8 @@ public final class IdSet implements org.urajio.freshpastry.rice.p2p.commonapi.Id
 
     /**
      * return a subset of this set, consisting of the member ids in a given range
-     *
-     * @param from the lower end of the range (inclusive)
-     * @param to   the upper end of the range (exclusive)
-     * @return the subset
      */
     public org.urajio.freshpastry.rice.p2p.commonapi.IdSet subSet(org.urajio.freshpastry.rice.p2p.commonapi.IdRange range) {
-        //return subSet((Id) range.getCWId(), (Id) range.getCCWId());
         return subSet((IdRange) range);
     }
 
@@ -286,9 +257,8 @@ public final class IdSet implements org.urajio.freshpastry.rice.p2p.commonapi.Id
         return (org.urajio.freshpastry.rice.p2p.commonapi.Id[]) idSet.keySet().toArray(new org.urajio.freshpastry.rice.p2p.commonapi.Id[0]);
     }
 
+    // TODO: do we need this?
     public Object clone() {
         return new IdSet(idSet);
     }
-
-
 }

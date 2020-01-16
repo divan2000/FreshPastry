@@ -60,5 +60,4 @@ public interface AppSocket {
      * Closes this socket.
      */
     void close();
-
 }

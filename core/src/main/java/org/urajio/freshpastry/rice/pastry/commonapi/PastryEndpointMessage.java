@@ -36,31 +36,21 @@ public class PastryEndpointMessage extends PRawMessage {
         checkRawType(message);
         setSender(sender);
         this.message = message;
-//    isRaw = true;
         setPriority(message.getPriority());
     }
 
     public PastryEndpointMessage(int address, InputBuffer buf, MessageDeserializer md, short type, int priority, NodeHandle sender) throws IOException {
         super(address);
 
-        byte version = 0;//buf.readByte();
-        if (version == 0) {
-            setSender(sender);
-            //    isRaw = buf.readBoolean();
-//        byte priority = buf.readByte();
-//        short type = buf.readShort();
-            if (type == 0) {
-                message = new JavaSerializedMessage(md.deserialize(buf, type, priority, sender));
-            } else {
-                message = (RawMessage) md.deserialize(buf, type, priority, sender);
-            }
-            if (getMessage() == null)
-                throw new IOException("PEM.deserialize() message = null type:" + type + " md:" + md);
-//    System.out.println("PEM.deserialize() message:"+message+" type:"+type+" md:"+md);
-        } else {
-            throw new IOException("Unknown Version: " + version);
-        }
+        setSender(sender);
 
+        if (type == 0) {
+            message = new JavaSerializedMessage(md.deserialize(buf, type, priority, sender));
+        } else {
+            message = (RawMessage) md.deserialize(buf, type, priority, sender);
+        }
+        if (getMessage() == null)
+            throw new IOException("PEM.deserialize() message = null type:" + type + " md:" + md);
     }
 
     public static void checkRawType(RawMessage message) {

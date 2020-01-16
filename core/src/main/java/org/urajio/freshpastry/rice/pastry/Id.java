@@ -227,7 +227,7 @@ public class Id implements org.urajio.freshpastry.rice.p2p.commonapi.Id, RawSeri
     protected static Id resolve(WeakHashMap map, Id id) {
         synchronized (map) {
             WeakReference ref = (WeakReference) map.get(id);
-            Id result = null;
+            Id result;
 
             if ((ref != null) && ((result = (Id) ref.get()) != null)) {
                 return result;
@@ -381,26 +381,6 @@ public class Id implements org.urajio.freshpastry.rice.p2p.commonapi.Id, RawSeri
         return build(res.Id);
     }
 
-
-    /**
-     * Sets the ith bit to a given value i = 0 is the least significant bit.
-     *
-     * @param i which bit to set.
-     * @param v new value of bit
-     */
-//  private void setBit(int i, int v) {
-//    int index = i / 32;
-//    int shift = i % 32;
-//    int val = Id[index];
-//    int mask = (1 << shift);
-//
-//    if (v == 1) {
-//      Id[index] = val | mask;
-//    } else {
-//      Id[index] = val & ~mask;
-//    }
-//  }
-
     /**
      * Checks if this Id is between two given ids ccw (inclusive) and cw (exclusive) on the circle
      *
@@ -484,7 +464,7 @@ public class Id implements org.urajio.freshpastry.rice.p2p.commonapi.Id, RawSeri
      * @return true if they are equal, false otherwise.
      */
     public boolean equals(Object obj) {
-        if ((obj == null) || (!(obj instanceof Id)))
+        if ((!(obj instanceof Id)))
             return false;
 
         Id nid = (Id) obj;
@@ -620,22 +600,8 @@ public class Id implements org.urajio.freshpastry.rice.p2p.commonapi.Id, RawSeri
             invert(dist);
         }
 
-//    Distance d = new Distance(dist);
-
         return d;
     }
-
-
-    /**
-     * Xor operator for Ids. Sets this Id to the bit-wise XOR of itself and otherId
-     *
-     * @param otherId a Id object
-     */
-//  public void xor(Id otherId) {
-//    for (int i = 0; i < nlen; i++) {
-//      Id[i] ^= otherId.Id[i];
-//    }
-//  }
 
     /**
      * Returns the longer numerical distance on the ring between a pair of Ids.
@@ -1058,6 +1024,7 @@ public class Id implements org.urajio.freshpastry.rice.p2p.commonapi.Id, RawSeri
          * @return true if they are the same, false otherwise.
          */
         public boolean equals(Object obj) {
+            // TODO: should check the class of its parameters
             return compareTo((Distance) obj) == 0;
         }
 

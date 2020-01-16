@@ -1,4 +1,12 @@
 allprojects {
+    apply plugin: 'java'
+
     group = 'org.urajio.freshpastry'
     version = '0.0.1'
+
+    sourceCompatibility = JavaVersion.VERSION_1_8
+
+    repositories {
+        jcenter()
+    }
 }

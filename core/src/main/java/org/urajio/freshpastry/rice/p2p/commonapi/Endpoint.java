@@ -199,7 +199,6 @@ public interface Endpoint extends NodeHandleReader {
      * @param task    The task to run on the processing thread
      * @param command The command to return the result to once it's done
      */
-    @SuppressWarnings("unchecked")
     void process(Executable task, Continuation command);
 
     /**

@@ -43,9 +43,9 @@ public class RoutingTable extends Observable implements NodeSetEventSource {
     private final static Logger logger = LoggerFactory.getLogger(RoutingTable.class);
     final int cols, rows;
     final ArrayList<NodeSetListener> listeners = new ArrayList<>();
+
     /**
-     * The routing calculations will occur in base <EM>2 <SUP>idBaseBitLength
-     * </SUP></EM>
+     * The routing calculations will occur in base <EM>2 <SUP>idBaseBitLength</SUP></EM>
      */
 
     public byte idBaseBitLength;// = 4;
@@ -56,82 +56,11 @@ public class RoutingTable extends Observable implements NodeSetEventSource {
     private int maxEntries;
 
     /**
-     * Starting with the diffDigit, get everyone in the table that is closer to the key than me
-     *
-     * This can easily be sped up by building the iterator at each row as needed.
-     *
-     * Always return the prefix-match first
-     *
-     * @param key
-     * @return
-     */
-//  public Iterator<NodeHandle> alternateRoutesIterator(final Id key) {
-//    int diffDigit = myNodeId.indexOfMSDD(key, idBaseBitLength);
-//    if (diffDigit < 0)
-//      return Collections.EMPTY_LIST.iterator(); // return an empty iterator
-//
-//    int keyDigit = key.getDigit(diffDigit, idBaseBitLength);
-//    final Id.Distance myDistance = myNodeId.distance(key);
-//
-//
-//    Tuple<NodeHandle, Id.Distance> prefixMatch = null;
-//
-//    final ArrayList<Tuple<NodeHandle, Id.Distance>> ret = new ArrayList<Tuple<NodeHandle, Id.Distance>>();
-//    for (int row = diffDigit; row >= 0; row--) {
-//      int numInRow = 0;
-//      for (int col = 0; col < cols; col++) {
-//        RouteSet rs = routingTable[row][col];
-//        if (rs != null) {
-//          for (int k = 0; k < rs.size(); k++) {
-//            NodeHandle nh = rs.get(k);
-//            if (!nh.equals(myNodeHandle)) {
-//              numInRow++;
-//              Id.Distance nDist = nh.getNodeId().distance(key);
-//              if () {
-//
-//              }
-//              if (myDistance.compareTo(nDist) > 0) {
-//                ret.add(new Tuple<NodeHandle, Id.Distance>(nh,nDist));
-//              }
-//            }
-//          }
-//        }
-//      }
-//      if (numInRow == 0) break;
-//    }
-//
-//    Collections.sort(ret, new Comparator<Tuple<NodeHandle, Id.Distance>>(){
-//
-//      public int compare(Tuple<NodeHandle, Id.Distance> o1,
-//          Tuple<NodeHandle, Id.Distance> o2) {
-//        return o1.b().compareTo(o2.b());
-//      }});
-//
-//    final Iterator<Tuple<NodeHandle, Id.Distance>> itr = ret.iterator();
-//
-//    return new Iterator<NodeHandle>() {
-//
-//      public void remove() {
-//
-//      }
-//
-//      public NodeHandle next() {
-//        return itr.next().a();
-//      }
-//
-//      public boolean hasNext() {
-//        return itr.hasNext();
-//      }
-//    };
-//  }
-
-    /**
      * Constructor.
      *
      * @param me  the node id for this routing table.
      * @param max the maximum number of entries at each table slot.
      */
-
     public RoutingTable(NodeHandle me, int max, byte base, PastryNode pn) {
         this.pn = pn;
         idBaseBitLength = base;
@@ -319,9 +248,9 @@ public class RoutingTable extends Observable implements NodeSetEventSource {
 
             {
                 // initialize rs
-                digit = (j == 0) ?
-                        (keyDigit + i) & (cols - 1) // & (cols-1) effects the overflow, making cols => 0, so it makes the algorithm wrap around
-                        : (keyDigit + cols - i) & (cols - 1);
+                // & (cols-1) effects the overflow, making cols => 0, so it makes the algorithm wrap around
+                if (j == 0) digit = (keyDigit + i) & (cols - 1);
+                else digit = (keyDigit + cols - i) & (cols - 1);
 
                 rs = getRouteSet(diffDigit, digit);
             }
@@ -348,25 +277,31 @@ public class RoutingTable extends Observable implements NodeSetEventSource {
                     k = 0;
                     j++;
                     if (j < 2) {
-                        digit = (j == 0) ?
-                                (keyDigit + i) & (cols - 1) // & (cols-1) effects the overflow, making cols => 0, so it makes the algorithm wrap around
-                                : (keyDigit + cols - i) & (cols - 1);
-                        if (digit == myDigit)
+                        // & (cols-1) effects the overflow, making cols => 0, so it makes the algorithm wrap around
+                        if (j == 0) {
+                            digit = (keyDigit + i) & (cols - 1);
+                        } else {
+                            digit = (keyDigit + cols - i) & (cols - 1);
+                        }
+                        if (digit == myDigit) {
                             return null;
+                        }
                         rs = getRouteSet(diffDigit, digit);
-                        return findNext();
                     } else {
                         i++;
-                        j = 0;
-                        int digit = (j == 0) ?
-                                (keyDigit + i) & (cols - 1) // & (cols-1) effects the overflow, making cols => 0, so it makes the algorithm wrap around
-                                : (keyDigit + cols - i) & (cols - 1);
+                        j = 0; // TODO: error?
+                        int digit;// & (cols-1) effects the overflow, making cols => 0, so it makes the algorithm wrap around
+                        if (j == 0) {
+                            digit = (keyDigit + i) & (cols - 1);
+                        } else {
+                            digit = (keyDigit + cols - i) & (cols - 1);
+                        }
 
                         rs = getRouteSet(diffDigit, digit);
 
                         k = 0;
-                        return findNext();
                     }
+                    return findNext();
                 }
 
 

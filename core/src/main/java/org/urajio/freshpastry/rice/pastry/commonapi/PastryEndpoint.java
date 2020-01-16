@@ -532,7 +532,6 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
      * @param task    The task to run on the processing thread
      * @param command The command to return the result to once it's done
      */
-    @SuppressWarnings("unchecked")
     public void process(Executable task, Continuation command) {
         thePastryNode.process(task, command);
     }
@@ -623,7 +622,9 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
         });
 
 
-        if (array.length <= num) return Arrays.asList(array);
+        if (array.length <= num) {
+            return Arrays.asList(array);
+        }
 
         NodeHandle[] ret = new NodeHandle[num];
         System.arraycopy(array, 0, ret, 0, num);

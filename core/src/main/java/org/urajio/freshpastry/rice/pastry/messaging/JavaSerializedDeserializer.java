@@ -36,7 +36,7 @@ public class JavaSerializedDeserializer implements MessageDeserializer {
         // the plan here is to provide a mechanism to easily java serialize RawMessages in case the user is having problems
         // provide a static method to java serialize the object then setAlwaysUsejavaSerialization(true)
 
-        Object o = null;
+        Object o;
         try {
             byte[] array = new byte[buf.bytesRemaining()];
             buf.read(array);

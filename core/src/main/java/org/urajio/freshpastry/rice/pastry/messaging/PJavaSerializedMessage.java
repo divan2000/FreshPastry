@@ -22,8 +22,6 @@ public class PJavaSerializedMessage extends PRawMessage {
     public PJavaSerializedMessage(Message msg) {
         super(msg.getDestination());
         this.msg = msg;
-        if (msg == null) throw new RuntimeException("msg cannot be null");
-//    constructionStack = new Exception("Stack Trace: msg:"+msg);
     }
 
     public short getType() {
