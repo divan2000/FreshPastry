@@ -349,10 +349,8 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
 
         if (nh != null) {
             Long time = lastTimeReceivedBLS.get(nh);
-            if (time == null || (time < leaseOffset)) {
-                // we don't have a lease
-                return false;
-            }
+            // we don't have a lease
+            return time != null && (time >= leaseOffset);
         }
         return true;
     }

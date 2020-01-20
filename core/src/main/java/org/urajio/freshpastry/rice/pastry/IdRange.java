@@ -95,10 +95,7 @@ public class IdRange implements org.urajio.freshpastry.rice.p2p.commonapi.IdRang
             return true;
         if (isFull() && o.isFull())
             return true;
-        if (empty == o.empty && ccw.equals(o.ccw) && cw.equals(o.cw))
-            return true;
-        else
-            return false;
+        return empty == o.empty && ccw.equals(o.ccw) && cw.equals(o.cw);
     }
 
     /**
