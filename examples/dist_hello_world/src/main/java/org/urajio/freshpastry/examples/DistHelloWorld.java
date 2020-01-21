@@ -32,30 +32,28 @@ import java.util.Vector;
  * @author Peter Druschel
  * @version $Id$
  */
-
 public class DistHelloWorld {
     private final static Logger logger = LoggerFactory.getLogger(DistHelloWorld.class);
 
-    public static int protocol = DistPastryNodeFactory.PROTOCOL_DEFAULT;
+    private static int protocol = DistPastryNodeFactory.PROTOCOL_DEFAULT;
     private static int port = 5009;
     private static String bshost = null;
     private static int bsport = 5009;
     private static int numnodes = 1;
     private static int nummsgs = 2; // per virtual node
-    public Environment environment;
+    private Environment environment;
     private PastryNodeFactory factory;
-    private Vector pastryNodes;
-    private Vector helloClients;
+    private Vector<PastryNode> pastryNodes;
+    private Vector<HelloWorldApp> helloClients;
 
     /**
      * Constructor
      */
     public DistHelloWorld(Environment env) throws IOException {
         environment = env;
-        factory = DistPastryNodeFactory.getFactory(new IPNodeIdFactory(InetAddress.getLocalHost(), port, env),
-                protocol, port, env);
-        pastryNodes = new Vector();
-        helloClients = new Vector();
+        factory = DistPastryNodeFactory.getFactory(new IPNodeIdFactory(InetAddress.getLocalHost(), port, env), protocol, port, env);
+        pastryNodes = new Vector<>();
+        helloClients = new Vector<>();
     }
 
     /**
@@ -64,20 +62,14 @@ public class DistHelloWorld {
     private static void doIinitstuff(String[] args, Environment env) {
 
         // process command line arguments
-
         for (String arg : args) {
             if (arg.equals("-help")) {
-                System.out
-                        .println("Usage: DistHelloWorld [-msgs m] [-nodes n] [-port p] [-bootstrap bshost[:bsport]]");
-                System.out
-                        .println("                     [-protocol (rmi|wire)] [-verbose|-silent|-verbosity v] [-help]");
+                System.out.println("Usage: DistHelloWorld [-msgs m] [-nodes n] [-port p] [-bootstrap bshost[:bsport]]");
+                System.out.println("                     [-protocol (rmi|wire)] [-verbose|-silent|-verbosity v] [-help]");
                 System.out.println();
-                System.out
-                        .println("  Ports p and bsport refer to RMI registry  or Socket port numbers (default = 5009).");
-                System.out
-                        .println("  Without -bootstrap bshost[:bsport], only localhost:p is used for bootstrap.");
-                System.out
-                        .println("  Default verbosity is 8, -verbose is 1, and -silent is 10 (error msgs only).");
+                System.out.println("  Ports p and bsport refer to RMI registry  or Socket port numbers (default = 5009).");
+                System.out.println("  Without -bootstrap bshost[:bsport], only localhost:p is used for bootstrap.");
+                System.out.println("  Default verbosity is 8, -verbose is 1, and -silent is 10 (error msgs only).");
                 System.exit(1);
             }
         }
@@ -130,8 +122,9 @@ public class DistHelloWorld {
                 } else {
                     bshost = str.substring(0, index);
                     bsport = Integer.parseInt(str.substring(index + 1));
-                    if (bsport <= 0)
+                    if (bsport <= 0) {
                         bsport = port;
+                    }
                 }
                 break;
             }
@@ -140,8 +133,9 @@ public class DistHelloWorld {
         for (int i = 0; i < args.length; i++) {
             if (args[i].equals("-nodes") && i + 1 < args.length) {
                 int n = Integer.parseInt(args[i + 1]);
-                if (n > 0)
+                if (n > 0) {
                     numnodes = n;
+                }
                 break;
             }
         }
@@ -149,15 +143,14 @@ public class DistHelloWorld {
         for (int i = 0; i < args.length; i++) {
             if (args[i].equals("-protocol") && i + 1 < args.length) {
                 String s = args[i + 1];
-                if (s.equalsIgnoreCase("socket"))
+                if (s.equalsIgnoreCase("socket")) {
                     protocol = DistPastryNodeFactory.PROTOCOL_SOCKET;
-                else
+                } else {
                     System.out.println("ERROR: Unsupported protocol: " + s);
-
+                }
                 break;
             }
         }
-
     }
 
     /**
@@ -170,7 +163,6 @@ public class DistHelloWorld {
      * msgs only).
      */
     public static void main(String[] args) throws IOException {
-
 
         Environment env = new Environment();
         env.getParameters().setInt("loglevel", 800);
@@ -209,7 +201,7 @@ public class DistHelloWorld {
 
         for (int i = 0; i < nummsgs; i++) {
             for (int client = 0; client < driver.helloClients.size(); client++) {
-                HelloWorldApp app = (HelloWorldApp) driver.helloClients.get(client);
+                HelloWorldApp app = driver.helloClients.get(client);
                 app.sendRndMsg(driver.environment.getRandomSource());
             }
         }
@@ -220,23 +212,20 @@ public class DistHelloWorld {
      * previous virtual node has already bound itself there. Then we try nattempts
      * times on bshost:bsport. Then we fail.
      *
-     * @param firstNode true of the first virtual node is being bootstrapped on
-     *                  this host
+     * @param firstNode true of the first virtual node is being bootstrapped on this host
      * @return handle to bootstrap node, or null.
      */
     protected NodeHandle getBootstrap(boolean firstNode) {
         InetSocketAddress addr = null;
-        if (firstNode && bshost != null)
+        if (firstNode && bshost != null) {
             addr = new InetSocketAddress(bshost, bsport);
-        else {
+        } else {
             try {
-                addr = new InetSocketAddress(InetAddress.getLocalHost().getHostName(),
-                        bsport);
+                addr = new InetSocketAddress(InetAddress.getLocalHost().getHostName(), bsport);
             } catch (UnknownHostException e) {
                 logger.error("getBootstrap()", e);
             }
         }
-
         return ((SocketPastryNodeFactory) factory).getNodeHandle(addr);
     }
 

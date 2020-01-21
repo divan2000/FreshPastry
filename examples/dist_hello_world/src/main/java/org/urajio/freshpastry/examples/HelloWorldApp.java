@@ -16,7 +16,6 @@ import org.urajio.freshpastry.rice.pastry.routing.SendOptions;
  * @author Sitaram Iyer
  * @version $Id$
  */
-
 public class HelloWorldApp extends PastryAppl {
     private final static Logger logger = LoggerFactory.getLogger(HelloWorldApp.class);
     private static int addr = HelloAddress.getCode();
@@ -33,12 +32,11 @@ public class HelloWorldApp extends PastryAppl {
      * @param rng Randon number generator.
      */
     public void sendRndMsg(RandomSource rng) {
-        Id rndid = Id.makeRandomId(rng);
-        logger.debug("Sending message from " + getNodeId() + " to random dest " + rndid);
+        Id randomId = Id.makeRandomId(rng);
+        logger.debug("Sending message from " + getNodeId() + " to random dest " + randomId);
 
-        Message msg = new HelloMsg(addr, thePastryNode.getLocalHandle(), rndid,
-                ++msgid);
-        routeMsg(rndid, msg, new SendOptions());
+        Message msg = new HelloMsg(addr, thePastryNode.getLocalHandle(), randomId, ++msgid);
+        routeMsg(randomId, msg, new SendOptions());
     }
 
     /**
@@ -49,8 +47,6 @@ public class HelloWorldApp extends PastryAppl {
     public int getAddress() {
         return addr;
     }
-
-    // The remaining methods override abstract methods in the PastryAppl API.
 
     /**
      * Invoked on destination node when a message arrives.
@@ -70,8 +66,7 @@ public class HelloWorldApp extends PastryAppl {
      * @param opt     send options
      * @return true if message needs to be forwarded according to plan.
      */
-    public boolean enrouteMessage(Message msg, Id key, NodeHandle nextHop,
-                                  SendOptions opt) {
+    public boolean enrouteMessage(Message msg, Id key, NodeHandle nextHop, SendOptions opt) {
         logger.debug("Enroute " + msg + " at " + getNodeId());
 
         return true;
@@ -85,12 +80,12 @@ public class HelloWorldApp extends PastryAppl {
      */
     public void leafSetChange(NodeHandle nh, boolean wasAdded) {
         if (logger.isDebugEnabled()) {
-            String s = "In " + getNodeId() + "'s leaf set, " + "node " + nh.getNodeId()
-                    + " was ";
-            if (wasAdded)
+            String s = "In " + getNodeId() + "'s leaf set, " + "node " + nh.getNodeId() + " was ";
+            if (wasAdded) {
                 s += "added";
-            else
+            } else {
                 s += "removed";
+            }
 
             System.out.println(s);
         }
@@ -104,13 +99,12 @@ public class HelloWorldApp extends PastryAppl {
      */
     public void routeSetChange(NodeHandle nh, boolean wasAdded) {
         if (logger.isDebugEnabled()) {
-            String s = "In " + getNodeId() + "'s route set, " + "node "
-                    + nh.getNodeId() + " was ";
-            if (wasAdded)
+            String s = "In " + getNodeId() + "'s route set, " + "node " + nh.getNodeId() + " was ";
+            if (wasAdded) {
                 s += "added";
-            else
+            } else {
                 s += "removed";
-
+            }
             System.out.println(s);
         }
     }

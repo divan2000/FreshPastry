@@ -8,8 +8,8 @@ import org.urajio.freshpastry.rice.pastry.messaging.Message;
  * @author Jeff Hoye
  */
 public class HelloMsg extends Message {
-    public Id target;
-    public boolean messageDirect = false;
+    private Id target;
+    private boolean messageDirect = false;
     private int msgid;
     private NodeHandle src;
 
@@ -25,7 +25,6 @@ public class HelloMsg extends Message {
     }
 
     public String getInfo() {
-
         String s = toString();
         if (messageDirect) {
             s += " direct";

@@ -13,9 +13,8 @@ import java.util.Date;
  * @author Sitaram Iyer
  * @version $Id$
  */
-
 public abstract class Message implements Serializable, org.urajio.freshpastry.rice.p2p.commonapi.Message {
-    public static final int DEFAULT_PRIORITY_LEVEL = org.urajio.freshpastry.rice.p2p.commonapi.Message.MEDIUM_PRIORITY;
+    private static final int DEFAULT_PRIORITY_LEVEL = org.urajio.freshpastry.rice.p2p.commonapi.Message.MEDIUM_PRIORITY;
     private static final long serialVersionUID = 8921944904321235696L;
     private int destination;
 
@@ -36,7 +35,6 @@ public abstract class Message implements Serializable, org.urajio.freshpastry.ri
      *
      * @param dest the destination.
      */
-
     public Message(int dest) {
         this(dest, null);
     }
@@ -47,7 +45,6 @@ public abstract class Message implements Serializable, org.urajio.freshpastry.ri
      * @param dest      the destination.
      * @param timestamp the timestamp
      */
-
     public Message(int dest, Date timestamp) {
         if (dest == 0) throw new IllegalArgumentException("dest must != 0");
         destination = dest;
@@ -98,7 +95,6 @@ public abstract class Message implements Serializable, org.urajio.freshpastry.ri
      * Set sender Id. Called by NodeHandle just before dispatch, so that this Id
      * is guaranteed to belong to the immediate sender.
      *
-     * @param the immediate sender's NodeId.
      */
     public void setSender(NodeHandle nh) {
         sender = nh;
@@ -116,7 +112,7 @@ public abstract class Message implements Serializable, org.urajio.freshpastry.ri
     /**
      * Set priority.
      *
-     * @param the new priority.
+     * @param prio the new priority.
      */
     protected void setPriority(int prio) {
         priorityLevel = prio;
@@ -126,8 +122,7 @@ public abstract class Message implements Serializable, org.urajio.freshpastry.ri
      * If the message has no timestamp, this will stamp the message.
      *
      * @param time the timestamp.
-     * @return true if the message was stamped, false if the message already had a
-     * timestamp.
+     * @return true if the message was stamped, false if the message already had a timestamp.
      */
     public boolean stamp(Date time) {
         if (theStamp == null) {
@@ -136,5 +131,4 @@ public abstract class Message implements Serializable, org.urajio.freshpastry.ri
         } else
             return false;
     }
-
 }
