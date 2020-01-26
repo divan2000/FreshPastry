@@ -1,14 +1,8 @@
 plugins {
-    id 'application'
+    id 'java-library'
 }
 
 dependencies {
     implementation project(':core')
-    implementation project(':examples:shared')
-
     implementation group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3'
-}
-
-application {
-    mainClassName = 'org.urajio.freshpastry.examples.HelloWorld'
 }

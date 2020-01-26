@@ -99,11 +99,9 @@ public class SimpleParameters implements Parameters {
         String port = name.substring(name.indexOf(":") + 1);
 
         try {
-            return new InetSocketAddress(InetAddress.getByName(host), Integer
-                    .parseInt(port));
+            return new InetSocketAddress(InetAddress.getByName(host), Integer.parseInt(port));
         } catch (UnknownHostException uhe) {
-            System.err.println("ERROR: Unable to find IP for ISA " + name
-                    + " - returning null.");
+            System.err.println("ERROR: Unable to find IP for ISA " + name + " - returning null.");
             return null;
         }
     }
@@ -137,16 +135,14 @@ public class SimpleParameters implements Parameters {
      * @see #store()
      */
     protected void setProperty(String name, String value) {
-        if ((defaults.getProperty(name) != null)
-                && (defaults.getProperty(name).equals(value))) {
+        if ((defaults.getProperty(name) != null) && (defaults.getProperty(name).equals(value))) {
             // setting property back to default, remove override property if any
             if (properties.getProperty(name) != null) {
                 properties.remove(name);
                 fireChangeEvent(name, value);
             }
         } else {
-            if ((properties.getProperty(name) == null)
-                    || (!properties.getProperty(name).equals(value))) {
+            if ((properties.getProperty(name) == null) || (!properties.getProperty(name).equals(value))) {
                 properties.setProperty(name, value);
                 fireChangeEvent(name, value);
             }
@@ -166,8 +162,9 @@ public class SimpleParameters implements Parameters {
     }
 
     public boolean contains(String name) {
-        if (defaults.containsKey(name))
+        if (defaults.containsKey(name)) {
             return true;
+        }
         return properties.containsKey(name);
     }
 
@@ -175,8 +172,7 @@ public class SimpleParameters implements Parameters {
         try {
             return Integer.parseInt(getProperty(name));
         } catch (NumberFormatException nfe) {
-            throw new NumberFormatException(nfe.getMessage() + " for parameter "
-                    + name);
+            throw new NumberFormatException(nfe.getMessage() + " for parameter " + name);
         }
     }
 
@@ -184,8 +180,7 @@ public class SimpleParameters implements Parameters {
         try {
             return Double.parseDouble(getProperty(name));
         } catch (NumberFormatException nfe) {
-            throw new NumberFormatException(nfe.getMessage() + " for parameter "
-                    + name);
+            throw new NumberFormatException(nfe.getMessage() + " for parameter " + name);
         }
     }
 
@@ -193,8 +188,7 @@ public class SimpleParameters implements Parameters {
         try {
             return Float.parseFloat(getProperty(name));
         } catch (NumberFormatException nfe) {
-            throw new NumberFormatException(nfe.getMessage() + " for parameter "
-                    + name);
+            throw new NumberFormatException(nfe.getMessage() + " for parameter " + name);
         }
     }
 
@@ -219,8 +213,9 @@ public class SimpleParameters implements Parameters {
     }
 
     public InetSocketAddress[] getInetSocketAddressArray(String name) {
-        if (getString(name).length() == 0)
+        if (getString(name).length() == 0) {
             return new InetSocketAddress[0];
+        }
 
         String[] addresses = getString(name).split(ARRAY_SPACER);
         List<InetSocketAddress> result = new LinkedList<>();
@@ -228,8 +223,9 @@ public class SimpleParameters implements Parameters {
         for (String s : addresses) {
             InetSocketAddress address = parseInetSocketAddress(s);
 
-            if (address != null)
+            if (address != null) {
                 result.add(address);
+            }
         }
 
         return result.toArray(new InetSocketAddress[0]);
@@ -242,10 +238,11 @@ public class SimpleParameters implements Parameters {
     public String[] getStringArray(String name) {
         String list = getProperty(name);
 
-        if (list != null)
+        if (list != null) {
             return (list.equals("") ? new String[0] : list.split(ARRAY_SPACER));
-        else
+        } else {
             return null;
+        }
     }
 
     public void setInt(String name, int value) {
@@ -273,8 +270,7 @@ public class SimpleParameters implements Parameters {
     }
 
     public void setInetSocketAddress(String name, InetSocketAddress value) {
-        setProperty(name, value.getAddress().getHostAddress() + ":"
-                + value.getPort());
+        setProperty(name, value.getAddress().getHostAddress() + ":" + value.getPort());
     }
 
     public void setInetSocketAddressArray(String name, InetSocketAddress[] value) {
@@ -282,8 +278,9 @@ public class SimpleParameters implements Parameters {
 
         for (int i = 0; i < value.length; i++) {
             buffer.append(value[i].getAddress().getHostAddress()).append(":").append(value[i].getPort());
-            if (i < value.length - 1)
+            if (i < value.length - 1) {
                 buffer.append(ARRAY_SPACER);
+            }
         }
 
         setProperty(name, buffer.toString());
@@ -298,16 +295,18 @@ public class SimpleParameters implements Parameters {
 
         for (int i = 0; i < value.length; i++) {
             buffer.append(value[i]);
-            if (i < value.length - 1)
+            if (i < value.length - 1) {
                 buffer.append(ARRAY_SPACER);
+            }
         }
 
         setProperty(name, buffer.toString());
     }
 
     public void store() throws IOException {
-        if (configFileName == null)
+        if (configFileName == null) {
             return;
+        }
         try {
             File current = new File(configFileName);
             File next = new File(configFileName + ".new");
@@ -321,8 +320,7 @@ public class SimpleParameters implements Parameters {
             next.renameTo(current);
             old.delete();
         } catch (IOException ioe) {
-            System.err.println("[Loader       ]: Unable to store properties file "
-                    + configFileName + ", got error " + ioe);
+            System.err.println("[Loader       ]: Unable to store properties file " + configFileName + ", got error " + ioe);
             throw ioe;
         }
     }

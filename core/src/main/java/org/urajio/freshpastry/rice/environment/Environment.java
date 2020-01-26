@@ -30,8 +30,9 @@ import java.util.HashSet;
  * @author Jeff Hoye
  */
 public class Environment implements Destructable {
-    public static final String[] defaultParamFileArray = {"freepastry"};
     private final static Logger logger = LoggerFactory.getLogger(Environment.class);
+
+    public static final String[] defaultParamFileArray = {"freepastry"};
     private SelectorManager selectorManager;
     private Processor processor;
     private RandomSource randomSource;
@@ -209,7 +210,6 @@ public class Environment implements Destructable {
     }
 
     private void callDestroyOnDestructables() {
-        //for (Destructable d : new ArrayList<>(destructables)) {
         for (Destructable destructable : destructables) {
             destructable.destroy();
         }

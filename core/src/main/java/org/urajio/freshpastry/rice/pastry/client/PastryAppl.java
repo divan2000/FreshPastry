@@ -473,11 +473,6 @@ public abstract class PastryAppl /*implements Observer*/ {
         theReceiver.receiveSocket(socket);
     }
 
-    /**
-     * Buffered while node is not ready to prevent inconsistent routing.
-     */
-//  LinkedList undeliveredMessages = new LinkedList();
-
     private class LeafSetObserver implements NodeSetListener {
         public void nodeSetUpdate(NodeSetEventSource nodeSetEventSource, NodeHandle handle, boolean added) {
             leafSetChange(handle, added);
@@ -489,5 +484,4 @@ public abstract class PastryAppl /*implements Observer*/ {
             routeSetChange(handle, added);
         }
     }
-
 }

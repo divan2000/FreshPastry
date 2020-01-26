@@ -10,5 +10,5 @@ dependencies {
 }
 
 application {
-    mainClassName = 'org.urajio.freshpastry.examples.DistHelloWorld'
+    mainClassName = 'org.urajio.freshpastry.examples.DirectPastryPingTest'
 }
